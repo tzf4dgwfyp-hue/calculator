@@ -316,7 +316,7 @@ section.on > h2::after{content:"";display:block;height:1px;width:180px;margin:9p
   <div class="mark"><i style="--x:0;--y:0;--i:0;--p:0"></i><i style="--x:-0.5;--y:1;--i:1;--p:8"></i><i style="--x:0.5;--y:1;--i:2;--p:1"></i><i style="--x:-1;--y:2;--i:3;--p:7"></i><i style="--x:0;--y:2;--i:4;--p:40"></i><i style="--x:1;--y:2;--i:5;--p:2"></i><i style="--x:-1.5;--y:3;--i:6;--p:6"></i><i style="--x:-0.5;--y:3;--i:7;--p:5"></i><i style="--x:0.5;--y:3;--i:8;--p:4"></i><i style="--x:1.5;--y:3;--i:9;--p:3"></i></div>
   <div>
     <h1>Mekanik Tesisat Hesap Aracı</h1>
-    <div class="sub">56 modül · Isıtma · Boru · Yerden ısıtma · Havalandırma · Yangın &amp; fan · Su · Havuz · Altyapı · Doğalgaz · Tedarikçi rehberi</div>
+    <div class="sub">64 modül · Isıtma · Boru · Yerden ısıtma · Havalandırma · Yangın &amp; fan · Su · Havuz · Altyapı · Doğalgaz · Çelik · Tedarikçi rehberi</div>
   </div>
   <div class="tools">
     <button class="tool" onclick="saveJSON()">Kaydet (.json)</button>
@@ -4260,6 +4260,1058 @@ MOD.push({grup:"Referans", id:"tedarikci", ad:"Tedarikçi Rehberi", baslik:"Teda
      });
    }
  }});
+
+/* ============== ÇELİK HESAP — çerçeve analizi ve eleman tahkikleri ==============
+   Çözücü ve formüller kaynak dosyadan birebir korunmuştur; yalnızca CH ad alanına
+   sarılmış, tuval erişimi ve başlatma tembelleştirilmiştir. */
+const CH=(function(){
+
+const PROFILES={"IPE 80":{t:"I",h:80,b:46,A:7.64,kg:6.0,Iy:80.1,Wel:20.0,Iz:8.5,iy:3.24,iz:1.05,Av:3.04},"IPE 100":{t:"I",h:100,b:55,A:10.3,kg:8.1,Iy:171,Wel:34.2,Iz:15.9,iy:4.07,iz:1.24,Av:4.1},"IPE 120":{t:"I",h:120,b:64,A:13.2,kg:10.4,Iy:318,Wel:53.0,Iz:27.7,iy:4.91,iz:1.45,Av:5.28},"IPE 140":{t:"I",h:140,b:73,A:16.4,kg:12.9,Iy:541,Wel:77.3,Iz:44.9,iy:5.74,iz:1.65,Av:6.58},"IPE 160":{t:"I",h:160,b:82,A:20.1,kg:15.8,Iy:869,Wel:109,Iz:68.3,iy:6.58,iz:1.84,Av:8.0},"IPE 180":{t:"I",h:180,b:91,A:23.9,kg:18.8,Iy:1317,Wel:146,Iz:101,iy:7.42,iz:2.06,Av:9.54},"IPE 200":{t:"I",h:200,b:100,A:28.5,kg:22.4,Iy:1943,Wel:194,Iz:142,iy:8.26,iz:2.23,Av:11.2},"IPE 220":{t:"I",h:220,b:110,A:33.4,kg:26.2,Iy:2772,Wel:252,Iz:205,iy:9.11,iz:2.48,Av:12.98},"IPE 240":{t:"I",h:240,b:120,A:39.1,kg:30.7,Iy:3892,Wel:324,Iz:284,iy:9.98,iz:2.7,Av:14.88},"IPE 270":{t:"I",h:270,b:135,A:45.9,kg:36.0,Iy:5790,Wel:429,Iz:420,iy:11.23,iz:3.02,Av:17.82},"IPE 300":{t:"I",h:300,b:150,A:53.8,kg:42.2,Iy:8356,Wel:557,Iz:604,iy:12.46,iz:3.35,Av:21.3},"IPE 330":{t:"I",h:330,b:160,A:62.6,kg:49.1,Iy:11770,Wel:713,Iz:788,iy:13.71,iz:3.55,Av:24.75},"IPE 360":{t:"I",h:360,b:170,A:72.7,kg:57.1,Iy:16270,Wel:904,Iz:1043,iy:14.96,iz:3.79,Av:28.8},"IPE 400":{t:"I",h:400,b:180,A:84.5,kg:66.3,Iy:23130,Wel:1156,Iz:1318,iy:16.54,iz:3.95,Av:34.4},"IPE 450":{t:"I",h:450,b:190,A:98.8,kg:77.6,Iy:33740,Wel:1500,Iz:1676,iy:18.48,iz:4.12,Av:42.3},"IPE 500":{t:"I",h:500,b:200,A:116,kg:91.1,Iy:48200,Wel:1928,Iz:2142,iy:20.38,iz:4.3,Av:51.0},"HEA 100":{t:"I",h:96,b:100,A:21.2,kg:16.6,Iy:349,Wel:72.8,Iz:134,iy:4.06,iz:2.51,Av:4.8},"HEA 120":{t:"I",h:114,b:120,A:25.3,kg:19.9,Iy:606,Wel:106,Iz:231,iy:4.89,iz:3.02,Av:5.7},"HEA 140":{t:"I",h:133,b:140,A:31.4,kg:24.6,Iy:1033,Wel:155,Iz:389,iy:5.74,iz:3.52,Av:7.32},"HEA 160":{t:"I",h:152,b:160,A:38.8,kg:30.5,Iy:1673,Wel:220,Iz:616,iy:6.57,iz:3.98,Av:9.12},"HEA 180":{t:"I",h:171,b:180,A:45.3,kg:35.6,Iy:2510,Wel:294,Iz:925,iy:7.44,iz:4.52,Av:10.26},"HEA 200":{t:"I",h:190,b:200,A:53.8,kg:42.2,Iy:3692,Wel:389,Iz:1336,iy:8.28,iz:4.98,Av:12.35},"HEA 220":{t:"I",h:210,b:220,A:64.3,kg:50.5,Iy:5410,Wel:515,Iz:1955,iy:9.17,iz:5.51,Av:14.7},"HEA 240":{t:"I",h:230,b:240,A:76.8,kg:60.3,Iy:7763,Wel:675,Iz:2769,iy:10.05,iz:6.0,Av:17.25},"HEA 300":{t:"I",h:290,b:300,A:112.5,kg:88.3,Iy:18260,Wel:1260,Iz:6310,iy:12.74,iz:7.49,Av:24.65},"HEB 100":{t:"I",h:100,b:100,A:26.0,kg:20.4,Iy:450,Wel:89.9,Iz:167,iy:4.16,iz:2.53,Av:6.0},"HEB 120":{t:"I",h:120,b:120,A:34.0,kg:26.7,Iy:864,Wel:144,Iz:318,iy:5.04,iz:3.06,Av:7.8},"HEB 140":{t:"I",h:140,b:140,A:43.0,kg:33.8,Iy:1509,Wel:216,Iz:550,iy:5.92,iz:3.58,Av:9.8},"HEB 160":{t:"I",h:160,b:160,A:54.3,kg:42.6,Iy:2492,Wel:311,Iz:889,iy:6.77,iz:4.05,Av:12.8},"HEB 200":{t:"I",h:200,b:200,A:78.1,kg:61.3,Iy:5696,Wel:570,Iz:2003,iy:8.54,iz:5.06,Av:18.0},"Kutu 30x30x2":{t:"K",h:30,b:30,A:2.14,kg:1.68,Iy:2.7,Wel:1.8,Iz:2.7,iy:1.13,iz:1.13,Av:1.07},"Kutu 40x40x2":{t:"K",h:40,b:40,A:2.94,kg:2.31,Iy:6.9,Wel:3.5,Iz:6.9,iy:1.54,iz:1.54,Av:1.47},"Kutu 40x40x3":{t:"K",h:40,b:40,A:4.21,kg:3.3,Iy:9.3,Wel:4.7,Iz:9.3,iy:1.49,iz:1.49,Av:2.1},"Kutu 50x50x2":{t:"K",h:50,b:50,A:3.74,kg:2.93,Iy:14.1,Wel:5.7,Iz:14.1,iy:1.95,iz:1.95,Av:1.87},"Kutu 50x50x3":{t:"K",h:50,b:50,A:5.41,kg:4.25,Iy:19.5,Wel:7.8,Iz:19.5,iy:1.9,iz:1.9,Av:2.7},"Kutu 60x60x3":{t:"K",h:60,b:60,A:6.61,kg:5.19,Iy:35.1,Wel:11.7,Iz:35.1,iy:2.31,iz:2.31,Av:3.3},"Kutu 70x70x3":{t:"K",h:70,b:70,A:7.81,kg:6.13,Iy:57.5,Wel:16.4,Iz:57.5,iy:2.71,iz:2.71,Av:3.9},"Kutu 80x80x3":{t:"K",h:80,b:80,A:9.01,kg:7.07,Iy:87.8,Wel:22.0,Iz:87.8,iy:3.12,iz:3.12,Av:4.5},"Kutu 80x80x4":{t:"K",h:80,b:80,A:11.75,kg:9.22,Iy:111.1,Wel:27.8,Iz:111.1,iy:3.07,iz:3.07,Av:5.87},"Kutu 90x90x4":{t:"K",h:90,b:90,A:13.35,kg:10.48,Iy:161.9,Wel:36.0,Iz:161.9,iy:3.48,iz:3.48,Av:6.67},"Kutu 100x100x3":{t:"K",h:100,b:100,A:11.41,kg:8.96,Iy:177.1,Wel:35.4,Iz:177.1,iy:3.94,iz:3.94,Av:5.7},"Kutu 100x100x4":{t:"K",h:100,b:100,A:14.95,kg:11.73,Iy:226.4,Wel:45.3,Iz:226.4,iy:3.89,iz:3.89,Av:7.47},"Kutu 100x100x5":{t:"K",h:100,b:100,A:18.36,kg:14.41,Iy:271.1,Wel:54.2,Iz:271.1,iy:3.84,iz:3.84,Av:9.18},"Kutu 120x120x4":{t:"K",h:120,b:120,A:18.15,kg:14.25,Iy:402.3,Wel:67.0,Iz:402.3,iy:4.71,iz:4.71,Av:9.07},"Kutu 120x120x5":{t:"K",h:120,b:120,A:22.36,kg:17.55,Iy:485.5,Wel:80.9,Iz:485.5,iy:4.66,iz:4.66,Av:11.18},"Kutu 140x140x5":{t:"K",h:140,b:140,A:26.36,kg:20.69,Iy:790.6,Wel:112.9,Iz:790.6,iy:5.48,iz:5.48,Av:13.18},"Kutu 150x150x5":{t:"K",h:150,b:150,A:28.36,kg:22.26,Iy:982.1,Wel:130.9,Iz:982.1,iy:5.89,iz:5.89,Av:14.18},"Kutu 150x150x6":{t:"K",h:150,b:150,A:33.63,kg:26.4,Iy:1145.9,Wel:152.8,Iz:1145.9,iy:5.84,iz:5.84,Av:16.82},"Kutu 40x20x2":{t:"K",h:40,b:20,A:2.14,kg:1.68,Iy:4.0,Wel:2.0,Iz:1.3,iy:1.38,iz:0.79,Av:1.42},"Kutu 50x30x3":{t:"K",h:50,b:30,A:4.21,kg:3.3,Iy:12.8,Wel:5.1,Iz:5.7,iy:1.75,iz:1.16,Av:2.63},"Kutu 60x40x3":{t:"K",h:60,b:40,A:5.41,kg:4.25,Iy:25.4,Wel:8.5,Iz:13.4,iy:2.17,iz:1.58,Av:3.25},"Kutu 80x40x3":{t:"K",h:80,b:40,A:6.61,kg:5.19,Iy:52.3,Wel:13.1,Iz:17.6,iy:2.81,iz:1.63,Av:4.41},"Kutu 80x40x4":{t:"K",h:80,b:40,A:8.55,kg:6.71,Iy:64.8,Wel:16.2,Iz:21.5,iy:2.75,iz:1.59,Av:5.7},"Kutu 100x50x3":{t:"K",h:100,b:50,A:8.41,kg:6.6,Iy:106.5,Wel:21.3,Iz:36.1,iy:3.56,iz:2.07,Av:5.61},"Kutu 100x50x4":{t:"K",h:100,b:50,A:10.95,kg:8.59,Iy:134.2,Wel:26.8,Iz:45.0,iy:3.5,iz:2.03,Av:7.3},"Kutu 120x60x4":{t:"K",h:120,b:60,A:13.35,kg:10.48,Iy:240.8,Wel:40.1,Iz:81.3,iy:4.25,iz:2.47,Av:8.9},"Kutu 120x80x4":{t:"K",h:120,b:80,A:14.95,kg:11.73,Iy:294.6,Wel:49.1,Iz:157.3,iy:4.44,iz:3.24,Av:8.97},"Kutu 150x100x5":{t:"K",h:150,b:100,A:23.36,kg:18.33,Iy:719.2,Wel:95.9,Iz:384.0,iy:5.55,iz:4.05,Av:14.01},"Kutu 160x80x5":{t:"K",h:160,b:80,A:22.36,kg:17.55,Iy:721.7,Wel:90.2,Iz:244.1,iy:5.68,iz:3.3,Av:14.9},"Kutu 200x100x5":{t:"K",h:200,b:100,A:28.36,kg:22.26,Iy:1459.3,Wel:145.9,Iz:496.9,iy:7.17,iz:4.19,Av:18.9}};
+
+// ===== Cerceve analiz cekirdegi (matris deplasman yontemi) =====
+// Birimler: N, mm, N/mm, N·mm. Isaretler: x saga+, y yukari+, moment saat tersi+.
+// Ic kuvvetler: N cekme+, M sarkma (sagging) +.
+
+function zeros(n){ return new Float64Array(n); }
+function mat(n){ const m=[]; for(let i=0;i<n;i++) m.push(zeros(n)); return m; }
+
+// Gauss eliminasyonu (kismi pivotlama)
+function solveLin(A, b){
+  const n=b.length, M=A.map(r=>Float64Array.from(r)), x=Float64Array.from(b);
+  for(let k=0;k<n;k++){
+    let p=k, best=Math.abs(M[k][k]);
+    for(let i=k+1;i<n;i++){ const v=Math.abs(M[i][k]); if(v>best){best=v;p=i;} }
+    if(best<1e-8) return null; // mekanizma / tekil
+    if(p!==k){ [M[p],M[k]]=[M[k],M[p]]; const t=x[p]; x[p]=x[k]; x[k]=t; }
+    for(let i=k+1;i<n;i++){
+      const f=M[i][k]/M[k][k]; if(f===0) continue;
+      for(let j=k;j<n;j++) M[i][j]-=f*M[k][j];
+      x[i]-=f*x[k];
+    }
+  }
+  for(let i=n-1;i>=0;i--){
+    let s=x[i];
+    for(let j=i+1;j<n;j++) s-=M[i][j]*x[j];
+    x[i]=s/M[i][i];
+  }
+  return x;
+}
+
+// Yerel rijitlik matrisi 6x6
+function kLocal(E,A,I,L){
+  const a=E*A/L, b=12*E*I/(L*L*L), c=6*E*I/(L*L), d=4*E*I/L, e=2*E*I/L;
+  return [
+    [ a,0,0,-a,0,0],
+    [ 0,b,c,0,-b,c],
+    [ 0,c,d,0,-c,e],
+    [-a,0,0,a,0,0],
+    [ 0,-b,-c,0,b,-c],
+    [ 0,c,e,0,-c,d]
+  ];
+}
+
+// Mafsal (moment serbestligi) icin statik kondensasyon.
+// rel: serbest birakilan yerel DOF indeksleri (2 = i ucu donme, 5 = j ucu donme)
+// k ve f0 (ankastrelik uc kuvvetleri) kondense edilir.
+function condense(k, f0, rel){
+  if(rel.length===0) return {k, f0, rel};
+  const n=6, keep=[]; for(let i=0;i<n;i++) if(!rel.includes(i)) keep.push(i);
+  // krr^-1 hesap (rel kucuk: 1 veya 2)
+  const krr=rel.map(r=>rel.map(c=>k[r][c]));
+  let inv;
+  if(rel.length===1){ inv=[[1/krr[0][0]]]; }
+  else {
+    const det=krr[0][0]*krr[1][1]-krr[0][1]*krr[1][0];
+    inv=[[krr[1][1]/det,-krr[0][1]/det],[-krr[1][0]/det,krr[0][0]/det]];
+  }
+  const kc=mat(6); const fc=zeros(6);
+  for(const i of keep){
+    fc[i]=f0[i];
+    for(let a=0;a<rel.length;a++){
+      let s=0;
+      for(let b=0;b<rel.length;b++) s+=inv[a][b]*f0[rel[b]];
+      fc[i]-=k[i][rel[a]]*s;
+    }
+    for(const j of keep){
+      let v=k[i][j];
+      for(let a=0;a<rel.length;a++) for(let b=0;b<rel.length;b++)
+        v-=k[i][rel[a]]*inv[a][b]*k[rel[b]][j];
+      kc[i][j]=v;
+    }
+  }
+  return {k:kc, f0:fc, rel, inv, keep, kOrig:k, f0Orig:f0};
+}
+
+// Kondense sistemde cozumden sonra serbest DOF'lari geri hesapla
+function recoverReleased(cond, uLocal){
+  const u=Float64Array.from(uLocal);
+  if(!cond.rel || cond.rel.length===0) return u;
+  const {rel, inv, kOrig, f0Orig}=cond;
+  for(let a=0;a<rel.length;a++){
+    let s=f0Orig[rel[a]];
+    for(let j=0;j<6;j++) if(!rel.includes(j)) s+=kOrig[rel[a]][j]*u[j];
+    // kondense sonrasi: krr*ur = -(f0r + krk*uk)  =>  ur = -inv*(...)
+    u[rel[a]]=0;
+    let ur=0;
+    for(let b=0;b<rel.length;b++){
+      let t=f0Orig[rel[b]];
+      for(let j=0;j<6;j++) if(!rel.includes(j)) t+=kOrig[rel[b]][j]*u[j];
+      ur+=-inv[a][b]*t;
+    }
+    u[rel[a]]=ur;
+  }
+  return u;
+}
+
+// model:
+//  nodes: [{x,y(mm), sup:"free"|"fix"|"pin"|"rollerX"|"rollerY", Fx,Fy(N), M(N·mm)}]
+//  members: [{i,j, E, A(mm2), I(mm4), wx,wy(N/mm global), relI,relJ(bool)}]
+//  nsub: her cubugun kac parcaya bolunecegi (dogruluk icin >=4 onerilir)
+function analyze(model){
+  const nsub=model.nsub||8;
+  // --- alt bolme: ic dugumler uret ---
+  const nodes=model.nodes.map(n=>({x:n.x,y:n.y,sup:n.sup||"free",Fx:n.Fx||0,Fy:n.Fy||0,M:n.M||0}));
+  const elems=[]; // {i,j,E,A,I,wx,wy,rel:[...],parent,segIdx,L,c,s}
+  model.members.forEach((m,mi)=>{
+    const n1=nodes[m.i], n2=nodes[m.j];
+    const dx=(n2.x-n1.x), dy=(n2.y-n1.y);
+    let prev=m.i;
+    for(let s=0;s<nsub;s++){
+      let nid;
+      if(s===nsub-1) nid=m.j;
+      else{
+        nid=nodes.length;
+        nodes.push({x:n1.x+dx*(s+1)/nsub, y:n1.y+dy*(s+1)/nsub, sup:"free",Fx:0,Fy:0,M:0});
+      }
+      const rel=[];
+      if(s===0 && m.relI) rel.push(2);
+      if(s===nsub-1 && m.relJ) rel.push(5);
+      elems.push({i:prev,j:nid,E:m.E,A:m.A,I:m.I,wx:m.wx||0,wy:m.wy||0,rel,parent:mi,segIdx:s});
+      prev=nid;
+    }
+  });
+
+  const nn=nodes.length, ndof=3*nn;
+  // DOF haritasi
+  const fixed=new Array(ndof).fill(false);
+  nodes.forEach((n,i)=>{
+    if(n.sup==="fix"){ fixed[3*i]=fixed[3*i+1]=fixed[3*i+2]=true; }
+    else if(n.sup==="pin"){ fixed[3*i]=fixed[3*i+1]=true; }
+    else if(n.sup==="rollerX"){ fixed[3*i+1]=true; }   // dusey tutulu, yatay serbest
+    else if(n.sup==="rollerY"){ fixed[3*i]=true; }     // yatay tutulu, dusey serbest
+  });
+  const map=new Array(ndof).fill(-1); let nf=0;
+  for(let d=0;d<ndof;d++) if(!fixed[d]) map[d]=nf++;
+
+  const K=mat(nf), F=zeros(nf);
+  nodes.forEach((n,i)=>{
+    if(map[3*i]>=0) F[map[3*i]]+=n.Fx;
+    if(map[3*i+1]>=0) F[map[3*i+1]]+=n.Fy;
+    if(map[3*i+2]>=0) F[map[3*i+2]]+=n.M;
+  });
+
+  // eleman hazirla + birlestir
+  for(const e of elems){
+    const n1=nodes[e.i], n2=nodes[e.j];
+    const dx=n2.x-n1.x, dy=n2.y-n1.y;
+    e.L=Math.hypot(dx,dy); e.c=dx/e.L; e.s=dy/e.L;
+    const {c,s,L}=e;
+    // yerel yayili yuk bilesenleri
+    e.qx=c*e.wx+s*e.wy; e.qy=-s*e.wx+c*e.wy;
+    // esdeger dugum yukleri (yerel) — dugumlere etkiyen
+    const fe=[e.qx*L/2, e.qy*L/2, e.qy*L*L/12, e.qx*L/2, e.qy*L/2, -e.qy*L*L/12];
+    // ankastrelik uc kuvvetleri: f0 = -fe (elemanin uclarina etkiyen)
+    const f0=fe.map(v=>-v);
+    const k=kLocal(e.E,e.A,e.I,e.L);
+    e.cond=condense(k,Float64Array.from(f0),e.rel);
+    // T: yerel = T * global
+    const T=[
+      [ c, s,0, 0,0,0],
+      [-s, c,0, 0,0,0],
+      [ 0, 0,1, 0,0,0],
+      [ 0,0,0, c, s,0],
+      [ 0,0,0,-s, c,0],
+      [ 0,0,0, 0,0,1]
+    ];
+    e.T=T;
+    // kglob = T' * kcond * T ; Fglob esdeger = T' * (fe kondense edilmis = -f0cond)
+    const kc=e.cond.k, f0c=e.cond.f0;
+    const kg=mat(6), fg=zeros(6);
+    for(let a=0;a<6;a++){
+      for(let b=0;b<6;b++){
+        let v=0;
+        for(let p=0;p<6;p++) for(let q=0;q<6;q++) v+=T[p][a]*kc[p][q]*T[q][b];
+        kg[a][b]=v;
+      }
+      let fv=0;
+      for(let p=0;p<6;p++) fv+=T[p][a]*(-f0c[p]);
+      fg[a]=fv;
+    }
+    const dofs=[3*e.i,3*e.i+1,3*e.i+2,3*e.j,3*e.j+1,3*e.j+2];
+    for(let a=0;a<6;a++){
+      const ga=map[dofs[a]];
+      if(ga<0) continue;
+      F[ga]+=fg[a];
+      for(let b=0;b<6;b++){
+        const gb=map[dofs[b]];
+        if(gb>=0) K[ga][gb]+=kg[a][b];
+      }
+    }
+    e.dofs=dofs; e.fg=fg; e.kg=kg;
+  }
+
+  // Rijitligi olmayan DOF'lar (ornegin tum uclari mafsalli dugumun donmesi): otomatik sabitle
+  let maxDiag=0;
+  for(let i=0;i<nf;i++) maxDiag=Math.max(maxDiag,Math.abs(K[i][i]));
+  for(let i=0;i<nf;i++){
+    if(Math.abs(K[i][i])<1e-10*maxDiag){
+      for(let j=0;j<nf;j++){ K[i][j]=0; K[j][i]=0; }
+      K[i][i]=1; F[i]=0;
+    }
+  }
+
+  const uf=solveLin(K,F);
+  if(!uf) return {error:"Sistem kararsız (mekanizma veya yetersiz mesnet). Mesnetleri ve mafsalları kontrol edin."};
+
+  const U=zeros(ndof);
+  for(let d=0;d<ndof;d++) if(map[d]>=0) U[d]=uf[map[d]];
+
+  // eleman uc kuvvetleri (yerel) + ic kuvvet ornekleme
+  const results=elems.map(e=>{
+    const ug=e.dofs.map(d=>U[d]);
+    const ulKept=zeros(6);
+    for(let a=0;a<6;a++){ let v=0; for(let b=0;b<6;b++) v+=e.T[a][b]*ug[b]; ulKept[a]=v; }
+    const ul=e.cond.rel && e.cond.rel.length ? recoverReleased(e.cond, ulKept) : ulKept;
+    // uc kuvvetleri: tam yerel k ve f0 ile
+    const kfull=kLocal(e.E,e.A,e.I,e.L);
+    const f0full=[ -e.qx*e.L/2, -e.qy*e.L/2, -e.qy*e.L*e.L/12, -e.qx*e.L/2, -e.qy*e.L/2, e.qy*e.L*e.L/12 ];
+    const fl=zeros(6);
+    for(let a=0;a<6;a++){ let v=f0full[a]; for(let b=0;b<6;b++) v+=kfull[a][b]*ul[b]; fl[a]=v; }
+    // ic kuvvet fonksiyonlari (kesitte): N cekme+, M sarkma+
+    const Nf=x=>-(fl[0]+e.qx*x);
+    const Vf=x=> (fl[1]+e.qy*x);
+    const Mf=x=>-fl[2]+fl[1]*x+e.qy*x*x/2;
+    return {e, ul, fl, Nf, Vf, Mf, ug};
+  });
+
+  // mesnet tepkileri: sabit DOF'larda toplam eleman kuvveti - dis yuk
+  const R=zeros(ndof);
+  results.forEach(r=>{
+    const {e,fl}=r;
+    // global uc kuvvetleri = T' * fl
+    for(let a=0;a<6;a++){
+      let v=0; for(let p=0;p<6;p++) v+=e.T[p][a]*fl[p];
+      R[e.dofs[a]]+=v;
+    }
+  });
+  const reactions=nodes.map((n,i)=>{
+    if(n.sup==="free") return null;
+    return {node:i, Rx:fixed[3*i]?R[3*i]-n.Fx:0, Ry:fixed[3*i+1]?R[3*i+1]-n.Fy:0, Rm:fixed[3*i+2]?R[3*i+2]-n.M:0};
+  }).filter(Boolean);
+
+  return {nodes, elems, U, results, reactions, nsub, nMembers:model.members.length};
+}
+
+
+
+// ===== Eleman tahkiki (EN 1993-1-1, elastik) =====
+// sect: {A_cm2, Wel_cm3, Av_cm2, imin_cm}; samples: [{N,V,M}] (N ve V: N, M: N·mm, servis)
+function checkMember(L_mm, sect, fy, SF, samples){
+  const A=sect.A_cm2*100, Wel=sect.Wel_cm3*1000, Av=sect.Av_cm2*100;
+  let utilStress=0, Vmax=0, Nmin=0, Nmax=0, Mabs=0;
+  for(const s of samples){
+    const u=(Math.abs(s.N)/A + Math.abs(s.M)/Wel)*SF/fy;
+    if(u>utilStress) utilStress=u;
+    Vmax=Math.max(Vmax,Math.abs(s.V));
+    Nmin=Math.min(Nmin,s.N); Nmax=Math.max(Nmax,s.N);
+    Mabs=Math.max(Mabs,Math.abs(s.M));
+  }
+  const utilShear=Vmax*SF/(Av*fy/Math.sqrt(3));
+  let utilBuck=0, lambda=0, chi=1;
+  if(Nmin<0){
+    lambda=L_mm/(sect.imin_cm*10);
+    const lb=lambda/(93.9*Math.sqrt(235/fy));
+    const phi=0.5*(1+0.49*(lb-0.2)+lb*lb);
+    chi=Math.min(1, 1/(phi+Math.sqrt(Math.max(phi*phi-lb*lb,1e-6))));
+    const n1=Math.abs(Nmin)*SF/(chi*A*fy);
+    const kyy=Math.min(1+0.6*Math.min(lb,1)*n1, 1+0.6*n1); // Cm=1 (guvenli)
+    utilBuck=n1 + kyy*Mabs*SF/(Wel*fy);
+  }
+  const worst=Math.max(utilStress,utilShear,utilBuck);
+  return {utilStress,utilShear,utilBuck,lambda,chi,worst,ok:worst<=1,Nmin,Nmax,Vmax,Mabs};
+}
+
+
+
+// ===================== durum =====================
+const GRADES={S235:235,S275:275,S355:355};
+let nodes=[], members=[], diag="geo", lastRun=null;
+
+function addNode(n){ nodes.push(n||{x:0,y:0,sup:"free",Fx:0,Fy:0,M:0}); renderTables(); drawGeo(); }
+function addMember(m){ members.push(m||{i:0,j:1,prof:"IPE 160",grade:"S235",relI:false,relJ:false,w:0}); renderTables(); drawGeo(); }
+function delNode(i){ nodes.splice(i,1); members=members.filter(m=>m.i!==i&&m.j!==i).map(m=>({...m,i:m.i>i?m.i-1:m.i,j:m.j>i?m.j-1:m.j})); renderTables(); drawGeo(); }
+function delMember(i){ members.splice(i,1); renderTables(); drawGeo(); }
+
+const SUPS=[["free","Serbest"],["fix","Ankastre"],["pin","Sabit (mafsallı)"],["rollerX","Kayıcı (yatay serbest)"],["rollerY","Kayıcı (düşey serbest)"]];
+
+function renderTables(){
+  const nt=document.querySelector("#ntbl tbody"); nt.innerHTML="";
+  nodes.forEach((n,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${i+1}</td>
+      <td><input type="number" step="0.1" value="${n.x}" onchange="CH.nodes[${i}].x=+this.value;CH.drawGeo()" style="width:62px"></td>
+      <td><input type="number" step="0.1" value="${n.y}" onchange="CH.nodes[${i}].y=+this.value;CH.drawGeo()" style="width:62px"></td>
+      <td><select onchange="CH.nodes[${i}].sup=this.value;CH.drawGeo()">${SUPS.map(s=>`<option value="${s[0]}"${n.sup===s[0]?" selected":""}>${s[1]}</option>`).join("")}</select></td>
+      <td><input type="number" value="${n.Fx}" onchange="CH.nodes[${i}].Fx=+this.value;CH.drawGeo()" style="width:60px"></td>
+      <td><input type="number" value="${n.Fy}" onchange="CH.nodes[${i}].Fy=+this.value;CH.drawGeo()" style="width:60px"></td>
+      <td><input type="number" value="${n.M}" onchange="CH.nodes[${i}].M=+this.value;CH.drawGeo()" style="width:60px"></td>
+      <td><button class="del" onclick="CH.delNode(${i})" title="Düğümü sil">×</button></td>`;
+    nt.appendChild(tr);
+  });
+  const mt=document.querySelector("#mtbl tbody"); mt.innerHTML="";
+  const profOpts=Object.keys(PROFILES);
+  members.forEach((m,k)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${k+1}</td>
+      <td><input type="number" min="1" value="${m.i+1}" onchange="CH.members[${k}].i=this.value-1;CH.drawGeo()" style="width:42px"></td>
+      <td><input type="number" min="1" value="${m.j+1}" onchange="CH.members[${k}].j=this.value-1;CH.drawGeo()" style="width:42px"></td>
+      <td><select onchange="CH.members[${k}].prof=this.value">${profOpts.map(p=>`<option${m.prof===p?" selected":""}>${p}</option>`).join("")}</select></td>
+      <td><select onchange="CH.members[${k}].grade=this.value">${Object.keys(GRADES).map(g=>`<option${m.grade===g?" selected":""}>${g}</option>`).join("")}</select></td>
+      <td><select onchange="CH.members[${k}].relI=this.value==='1'"><option value="0"${!m.relI?" selected":""}>Rijit</option><option value="1"${m.relI?" selected":""}>Mafsal</option></select></td>
+      <td><select onchange="CH.members[${k}].relJ=this.value==='1'"><option value="0"${!m.relJ?" selected":""}>Rijit</option><option value="1"${m.relJ?" selected":""}>Mafsal</option></select></td>
+      <td><input type="number" value="${m.w}" onchange="CH.members[${k}].w=+this.value" style="width:60px"></td>
+      <td><button class="del" onclick="CH.delMember(${k})" title="Çubuğu sil">×</button></td>`;
+    mt.appendChild(tr);
+  });
+}
+
+// ===================== model kur & hesapla =====================
+function buildModel(){
+  const selfw=document.getElementById("selfw").checked;
+  const nsub=Math.max(2,Math.min(20,+document.getElementById("nsub").value||8));
+  for(const m of members){
+    if(!(m.i>=0&&m.i<nodes.length&&m.j>=0&&m.j<nodes.length)) return {error:`Çubuk düğüm numarası geçersiz (1–${nodes.length} arası olmalı).`};
+    if(m.i===m.j) return {error:"Bir çubuğun iki ucu aynı düğüm olamaz."};
+    const dx=nodes[m.j].x-nodes[m.i].x, dy=nodes[m.j].y-nodes[m.i].y;
+    if(Math.hypot(dx,dy)<1e-6) return {error:"Sıfır boylu çubuk var (aynı koordinatlı iki düğüm)."};
+  }
+  return {
+    nodes:nodes.map(n=>({x:n.x*1000,y:n.y*1000,sup:n.sup,Fx:n.Fx*9.81,Fy:n.Fy*9.81,M:n.M*9810})),
+    members:members.map(m=>{
+      const p=PROFILES[m.prof];
+      let wy=-(m.w||0)*9.81/1000;
+      if(selfw) wy-=p.kg*9.81/1000;
+      return {i:m.i,j:m.j,E:210000,A:p.A*100,I:p.Iy*1e4,wy,relI:m.relI,relJ:m.relJ};
+    }),
+    nsub
+  };
+}
+
+function run(){
+  const res=document.getElementById("results"), body=document.getElementById("resbody");
+  const model=buildModel();
+  if(model.error){ body.innerHTML=`<div class="err">${model.error}</div>`; res.hidden=false; lastRun=null; drawGeo(); return; }
+  if(nodes.length<2||members.length<1){ body.innerHTML=`<div class="err">En az 2 düğüm ve 1 çubuk gerekli.</div>`; res.hidden=false; return; }
+  const r=analyze(model);
+  if(r.error){ body.innerHTML=`<div class="err">${r.error}</div>`; res.hidden=false; lastRun=null; drawGeo(); return; }
+  const SF=+document.getElementById("sf").value||1.5;
+
+  // cubuk bazinda topla
+  const perM=members.map((m,mi)=>{
+    const segs=r.results.filter(s=>s.e.parent===mi);
+    const samples=[];
+    for(const s of segs) for(let t=0;t<=4;t++){ const x=s.e.L*t/4; samples.push({N:s.Nf(x),V:s.Vf(x),M:s.Mf(x)}); }
+    const p=PROFILES[m.prof];
+    const Lm=Math.hypot(nodes[m.j].x-nodes[m.i].x, nodes[m.j].y-nodes[m.i].y)*1000;
+    const chk=checkMember(Lm,{A_cm2:p.A,Wel_cm3:p.Wel,Av_cm2:p.Av,imin_cm:Math.min(p.iy,p.iz)},GRADES[m.grade],SF,samples);
+    // bagil sehim: yerel dik yer degistirme - uc noktalarin dogrusal enterpolasyonu
+    const chain=[segs[0].e.i, ...segs.map(s=>s.e.j)];
+    const c=segs[0].e.c, s0=segs[0].e.s;
+    const perp=chain.map(nid=>-s0*r.U[3*nid]+c*r.U[3*nid+1]);
+    let sag=0;
+    for(let q=0;q<perp.length;q++){
+      const lin=perp[0]+(perp[perp.length-1]-perp[0])*q/(perp.length-1);
+      sag=Math.max(sag,Math.abs(perp[q]-lin));
+    }
+    return {m,chk,sag,Lm};
+  });
+
+  let maxU=0, maxDisp=0;
+  for(let i=0;i<r.nodes.length;i++) maxDisp=Math.max(maxDisp,Math.hypot(r.U[3*i],r.U[3*i+1]));
+  perM.forEach(x=>maxU=Math.max(maxU,x.chk.worst));
+
+  const fmt=(v,d=1)=>v.toLocaleString("tr-TR",{maximumFractionDigits:d,minimumFractionDigits:0});
+  const pc=v=>`<span class="uc${v>1?" hot":""}">${(v*100).toFixed(0)}%</span>`;
+
+  let h=`<h3>Mesnet tepkileri (servis yükleriyle)</h3><div class="tblwrap"><table><thead><tr><th>Düğüm</th><th>Rx (kg)</th><th>Ry (kg)</th><th>Moment (kg·m)</th></tr></thead><tbody>`;
+  for(const rc of r.reactions)
+    h+=`<tr><td>${rc.node<nodes.length?rc.node+1:"-"}</td><td>${fmt(rc.Rx/9.81)}</td><td>${fmt(rc.Ry/9.81)}</td><td>${fmt(rc.Rm/9810,2)}</td></tr>`;
+  h+=`</tbody></table></div>`;
+
+  h+=`<h3>Çubuk tahkikleri (iç kuvvetler × ${(+document.getElementById("sf").value).toLocaleString("tr-TR")} güvenlik katsayısıyla)</h3>
+  <div class="tblwrap"><table><thead><tr><th>Çubuk</th><th>Profil</th><th>N min/maks (kg)</th><th>|V| maks (kg)</th><th>|M| maks (kg·m)</th><th>Bağıl sehim</th><th>Gerilme</th><th>Burkulma</th><th>Kesme</th><th>Sonuç</th></tr></thead><tbody>`;
+  perM.forEach((x,i)=>{
+    const sagTxt=x.sag>0.05?`${x.sag.toFixed(1)} mm (L/${Math.round(x.Lm/x.sag)})`:"—";
+    const buck=x.chk.utilBuck>0?pc(x.chk.utilBuck)+(x.chk.lambda>200?" ⚠λ>200":""):"—";
+    h+=`<tr><td>${i+1}</td><td>${x.m.prof} ${x.m.grade}</td>
+      <td class="uc">${fmt(x.chk.Nmin/9.81)} / ${fmt(x.chk.Nmax/9.81)}</td>
+      <td class="uc">${fmt(x.chk.Vmax/9.81)}</td>
+      <td class="uc">${fmt(x.chk.Mabs/9810,2)}</td>
+      <td class="uc">${sagTxt}</td>
+      <td>${pc(x.chk.utilStress)}</td><td>${buck}</td><td>${pc(x.chk.utilShear)}</td>
+      <td><span class="chip ${x.chk.ok?"ok":"bad"}">${x.chk.ok?"UYGUN":"YETERSİZ"}</span></td></tr>`;
+  });
+  h+=`</tbody></table></div>
+  <p style="margin-top:8px">En büyük yer değiştirme: <b>${maxDisp.toFixed(2)} mm</b> · En yüksek kullanım oranı: <b class="${maxU>1?"uc hot":""}">${(maxU*100).toFixed(0)}%</b></p>`;
+  body.innerHTML=h;
+  res.hidden=false;
+  lastRun={r,perM,maxDisp};
+  setDiag(diag==="geo"?"def":diag);
+}
+
+// ===================== çizim =====================
+
+/* --- tuval paleti: uygulama temasına uyar --- */
+function koyuMu(){ try{ return matchMedia('(prefers-color-scheme: dark)').matches; }catch(e){ return false; } }
+function PAL(){ return koyuMu()
+  ? {sheet:"#0f1114", grid:"#20242a", gridTxt:"#5c6570", ink:"#dfe3e8", mut:"#8b929c",
+     steel:"#7fa8d0", hinge:"#0f1114", moment:"#d8a24a", defl:"#a99ae8",
+     comp:"#e2705f", tens:"#5aa9dd", mBar:"#d8a24a", vBar:"#7fa8d0"}
+  : {sheet:"#FFFFFF", grid:"#E4E8E3", gridTxt:"#9AA39B", ink:"#14213D", mut:"#5A6472",
+     steel:"#3E5C76", hinge:"#ffffff", moment:"#A63A2B", defl:"#5B4B8A",
+     comp:"#A63A2B", tens:"#2C6E9E", mBar:"#B0731B", vBar:"#3E5C76"}; }
+
+let cv=null, ctx=null;
+function canvasHazir(){ if(!cv){ cv=document.getElementById("sheet"); if(!cv) return false; ctx=cv.getContext("2d"); } return true; }
+function setDiag(d){ diag=d;
+  document.querySelectorAll(".diagbar button").forEach(b=>b.classList.toggle("on",b.dataset.d===d));
+  drawGeo();
+}
+function view(){
+  if(!canvasHazir()) return;
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth||700, hpx=520;
+  cv.width=w*dpr; cv.height=hpx*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  let xs=nodes.map(n=>n.x), ys=nodes.map(n=>n.y);
+  if(!xs.length){xs=[0,1];ys=[0,1];}
+  const minx=Math.min(...xs), maxx=Math.max(...xs), miny=Math.min(...ys), maxy=Math.max(...ys);
+  const spanx=Math.max(maxx-minx,1), spany=Math.max(maxy-miny,1);
+  const pad=70, sc=Math.min((w-2*pad)/spanx,(hpx-2*pad)/spany);
+  return {w,h:hpx,sc,ox:pad-minx*sc+(w-2*pad-spanx*sc)/2, oy:hpx-pad+miny*sc-(hpx-2*pad-spany*sc)/2};
+}
+const PX=(v,x)=>v.ox+x*v.sc, PY=(v,y)=>v.oy-y*v.sc;
+
+function drawGrid(v){
+  ctx.fillStyle=PAL().sheet; ctx.fillRect(0,0,v.w,v.h);
+  let step=Math.pow(10,Math.floor(Math.log10(80/v.sc)));
+  if(step*v.sc<35) step*=2; if(step*v.sc<35) step*=2.5;
+  ctx.strokeStyle=PAL().grid; ctx.lineWidth=1;
+  ctx.font="10px Segoe UI, sans-serif"; ctx.fillStyle=PAL().gridTxt;
+  const x0=Math.floor((0-v.ox)/v.sc/step)*step, x1=(v.w-v.ox)/v.sc;
+  for(let x=x0;x<=x1;x+=step){ const px=PX(v,x); ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,v.h); ctx.stroke(); ctx.fillText(x.toFixed(step<1?1:0),px+2,v.h-6); }
+  const y0=Math.floor((v.oy-v.h)/v.sc/step)*step, y1=v.oy/v.sc;
+  for(let y=y0;y<=y1;y+=step){ const py=PY(v,y); ctx.beginPath(); ctx.moveTo(0,py); ctx.lineTo(v.w,py); ctx.stroke(); ctx.fillText(y.toFixed(step<1?1:0),4,py-3); }
+  // antet (teknik resim köşe kutusu)
+  ctx.strokeStyle=PAL().ink; ctx.lineWidth=1;
+  const bw=190,bh=34;
+  ctx.fillStyle=PAL().sheet; ctx.fillRect(v.w-bw-8,v.h-bh-8,bw,bh);
+  ctx.strokeRect(v.w-bw-8,v.h-bh-8,bw,bh);
+  ctx.fillStyle=PAL().ink; ctx.font="600 11px Segoe UI, sans-serif";
+  const tt={geo:"GEOMETRİ VE YÜKLER",def:"ŞEKİL DEĞİŞTİRME",M:"MOMENT DİYAGRAMI",V:"KESME DİYAGRAMI",N:"NORMAL KUVVET"}[diag];
+  ctx.fillText(tt,v.w-bw,v.h-bh+8);
+  ctx.font="10px Segoe UI, sans-serif"; ctx.fillStyle=PAL().mut;
+  ctx.fillText("ızgara: "+ (step<1? step*100+" cm" : step+" m"), v.w-bw, v.h-bh+22);
+}
+
+function supSym(v,n){
+  const x=PX(v,n.x), y=PY(v,n.y); ctx.strokeStyle=PAL().ink; ctx.lineWidth=1.6; ctx.fillStyle=PAL().ink;
+  if(n.sup==="fix"){ ctx.beginPath(); ctx.moveTo(x-12,y); ctx.lineTo(x+12,y); ctx.stroke();
+    for(let k=-10;k<=8;k+=5){ ctx.beginPath(); ctx.moveTo(x+k,y); ctx.lineTo(x+k+5,y+7); ctx.stroke(); } }
+  else if(n.sup==="pin"||n.sup==="rollerX"){ ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-9,y+14); ctx.lineTo(x+9,y+14); ctx.closePath(); ctx.stroke();
+    if(n.sup==="rollerX"){ ctx.beginPath(); ctx.arc(x-5,y+18,3,0,7); ctx.arc(x+5,y+18,3,0,7); ctx.stroke(); }
+    else { ctx.beginPath(); ctx.moveTo(x-11,y+17); ctx.lineTo(x+11,y+17); ctx.stroke(); } }
+  else if(n.sup==="rollerY"){ ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-14,y-9); ctx.lineTo(x-14,y+9); ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x-18,y-5,3,0,7); ctx.arc(x-18,y+5,3,0,7); ctx.stroke(); }
+}
+function arrow(x1,y1,x2,y2,color){
+  ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const a=Math.atan2(y2-y1,x2-x1);
+  ctx.beginPath(); ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-8*Math.cos(a-0.4),y2-8*Math.sin(a-0.4));
+  ctx.lineTo(x2-8*Math.cos(a+0.4),y2-8*Math.sin(a+0.4)); ctx.closePath(); ctx.fill();
+}
+
+function drawGeo(){
+  if(!canvasHazir()) return;
+  const v=view(); drawGrid(v);
+  // cubuklar
+  members.forEach((m,k)=>{
+    if(!(nodes[m.i]&&nodes[m.j])) return;
+    const x1=PX(v,nodes[m.i].x),y1=PY(v,nodes[m.i].y),x2=PX(v,nodes[m.j].x),y2=PY(v,nodes[m.j].y);
+    ctx.strokeStyle=PAL().steel; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    if(m.relI){ ctx.fillStyle=PAL().hinge; ctx.strokeStyle=PAL().steel; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(x1+(x2-x1)*0.08,y1+(y2-y1)*0.08,4,0,7); ctx.fill(); ctx.stroke(); }
+    if(m.relJ){ ctx.fillStyle=PAL().hinge; ctx.strokeStyle=PAL().steel; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(x1+(x2-x1)*0.92,y1+(y2-y1)*0.92,4,0,7); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle=PAL().steel; ctx.font="600 11px Segoe UI, sans-serif";
+    ctx.fillText(String(k+1),(x1+x2)/2+6,(y1+y2)/2-6);
+    // yayili yuk oklari
+    if(m.w){ const nsteps=6;
+      for(let q=1;q<nsteps;q++){ const px=x1+(x2-x1)*q/nsteps, py=y1+(y2-y1)*q/nsteps;
+        arrow(px,py-20,px,py-4,"#B0731B"); } }
+  });
+  // dugumler
+  nodes.forEach((n,i)=>{
+    supSym(v,n);
+    const x=PX(v,n.x), y=PY(v,n.y);
+    ctx.fillStyle=PAL().ink; ctx.beginPath(); ctx.arc(x,y,3.5,0,7); ctx.fill();
+    ctx.font="700 11px Segoe UI, sans-serif"; ctx.fillText(String(i+1),x+6,y-6);
+    if(n.Fx) arrow(x-Math.sign(n.Fx)*34,y,x-Math.sign(n.Fx)*6,y,"#A63A2B");
+    if(n.Fy) arrow(x,y+Math.sign(n.Fy)*34,x,y+Math.sign(n.Fy)*6,"#A63A2B");
+    if(n.M){ ctx.strokeStyle=PAL().moment; ctx.lineWidth=1.6; ctx.beginPath(); ctx.arc(x,y,13,-2.4,0.6,n.M<0); ctx.stroke(); }
+  });
+  if(diag!=="geo"&&lastRun) drawOverlay(v);
+}
+
+function drawOverlay(v){
+  if(!canvasHazir()) return;
+  const {r}=lastRun;
+  if(diag==="def"){
+    let mx=1e-9; for(let i=0;i<r.nodes.length;i++) mx=Math.max(mx,Math.hypot(r.U[3*i],r.U[3*i+1]));
+    const sc=0.07*Math.min(v.w,v.h)/v.sc*1000/mx*v.sc/1000; // px per mm ölçek
+    const pxScale=0.07*Math.min(v.w,v.h)/mx;
+    for(let mi=0;mi<members.length;mi++){
+      const segs=r.results.filter(s=>s.e.parent===mi);
+      ctx.strokeStyle=PAL().defl; ctx.lineWidth=2; ctx.setLineDash([6,4]);
+      ctx.beginPath();
+      let first=true;
+      const chain=[segs[0].e.i,...segs.map(s=>s.e.j)];
+      for(const nid of chain){
+        const nx=r.nodes[nid].x/1000, ny=r.nodes[nid].y/1000;
+        const px=PX(v,nx)+r.U[3*nid]*pxScale, py=PY(v,ny)-r.U[3*nid+1]*pxScale;
+        first?ctx.moveTo(px,py):ctx.lineTo(px,py); first=false;
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.fillStyle=PAL().defl; ctx.font="600 11px Segoe UI, sans-serif";
+    ctx.fillText(`ölçek abartılı — δmaks = ${lastRun.maxDisp.toFixed(2)} mm`, 14, 20);
+    return;
+  }
+  const key=diag, f={M:"Mf",V:"Vf",N:"Nf"}[key];
+  let mx=1e-9;
+  for(const s of r.results) for(let t=0;t<=4;t++) mx=Math.max(mx,Math.abs(s[f](s.e.L*t/4)));
+  const sc=0.11*Math.min(v.w,v.h)/mx;
+  const P=PAL(); const col={M:P.mBar,V:P.vBar,N:null}[key];
+  for(const s of r.results){
+    const e=s.e, n1=r.nodes[e.i], n2=r.nodes[e.j];
+    const x1=PX(v,n1.x/1000), y1=PY(v,n1.y/1000), x2=PX(v,n2.x/1000), y2=PY(v,n2.y/1000);
+    // yerel +y ekran vektörü (sol normal): global (−s, c) → ekran (−s·, −c·)
+    const nxp=-e.s, nyp=-e.c;
+    const pts=[];
+    for(let t=0;t<=6;t++){
+      const xr=e.L*t/6, val=s[f](xr);
+      const bx=x1+(x2-x1)*t/6, by=y1+(y2-y1)*t/6;
+      const off=(key==="M"? -val: val)*sc; // moment çekme tarafına
+      pts.push([bx+nxp*off, by+nyp*off, val]);
+    }
+    let cfill=col;
+    if(key==="N"){ cfill=(s.Nf(e.L/2)<0)?P.comp:P.tens; }
+    ctx.fillStyle=cfill+"33"; ctx.strokeStyle=cfill; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(x1,y1);
+    for(const p of pts) ctx.lineTo(p[0],p[1]);
+    ctx.lineTo(x2,y2); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  const unit=key==="M"?"kg·m":"kg", conv=key==="M"?9810:9.81;
+  ctx.fillStyle=PAL().ink; ctx.font="600 11px Segoe UI, sans-serif";
+  ctx.fillText(`|${key}|maks = ${(mx/conv).toLocaleString("tr-TR",{maximumFractionDigits:1})} ${unit} (servis)`, 14, 20);
+}
+
+// ===================== örnekler / dosya =====================
+function loadExample(which){
+  if(!which) return;
+  document.getElementById("exsel").value="";
+  if(which==="beam"){
+    nodes=[{x:0,y:0,sup:"pin",Fx:0,Fy:0,M:0},{x:4,y:0,sup:"rollerX",Fx:0,Fy:0,M:0}];
+    members=[{i:0,j:1,prof:"IPE 160",grade:"S235",relI:false,relJ:false,w:250}];
+  }else if(which==="portal"){
+    nodes=[{x:0,y:0,sup:"fix",Fx:0,Fy:0,M:0},{x:0,y:3.5,sup:"free",Fx:800,Fy:0,M:0},
+           {x:6,y:3.5,sup:"free",Fx:0,Fy:0,M:0},{x:6,y:0,sup:"fix",Fx:0,Fy:0,M:0}];
+    members=[{i:0,j:1,prof:"HEA 200",grade:"S235",relI:false,relJ:false,w:0},
+             {i:1,j:2,prof:"IPE 240",grade:"S235",relI:false,relJ:false,w:800},
+             {i:2,j:3,prof:"HEA 200",grade:"S235",relI:false,relJ:false,w:0}];
+  }else if(which==="truss"){
+    nodes=[{x:0,y:0,sup:"pin",Fx:0,Fy:0,M:0},{x:2,y:0,sup:"free",Fx:0,Fy:-1500,M:0},
+           {x:4,y:0,sup:"rollerX",Fx:0,Fy:0,M:0},{x:1,y:1.2,sup:"free",Fx:0,Fy:0,M:0},
+           {x:3,y:1.2,sup:"free",Fx:0,Fy:0,M:0}];
+    const t=(i,j)=>({i,j,prof:"Kutu 60x60x3",grade:"S235",relI:true,relJ:true,w:0});
+    members=[t(0,1),t(1,2),t(0,3),t(3,4),t(4,2),t(3,1),t(4,1)];
+  }
+  renderTables(); drawGeo();
+  document.getElementById("results").hidden=true; lastRun=null;
+}
+function saveJSON(){
+  const blob=new Blob([JSON.stringify({nodes,members,sf:+document.getElementById("sf").value,selfw:document.getElementById("selfw").checked},null,1)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="cerceve_modeli.json"; a.click();
+}
+function loadJSON(inp){
+  const f=inp.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{
+    const d=JSON.parse(rd.result);
+    if(!Array.isArray(d.nodes)||!Array.isArray(d.members)) throw 0;
+    nodes=d.nodes; members=d.members;
+    if(d.sf) document.getElementById("sf").value=d.sf;
+    if("selfw" in d) document.getElementById("selfw").checked=!!d.selfw;
+    renderTables(); drawGeo(); document.getElementById("results").hidden=true; lastRun=null;
+  }catch(e){ alert("Dosya okunamadı: geçerli bir model JSON'u değil."); } };
+  rd.readAsText(f); inp.value="";
+}
+
+// ===================== açılış: öz-doğrulama + örnek =====================
+function selfTest(){
+  const E=210000,I=8.69e6,A=2010,w=2.6075,L=4000;
+  const r=analyze({nodes:[{x:0,y:0,sup:"pin"},{x:L,y:0,sup:"rollerX"}],members:[{i:0,j:1,E,A,I,wy:-w}],nsub:8});
+  const el=document.getElementById("selftest");
+  const M=r.results[3].Mf(r.results[3].e.L), Ma=w*L*L/8;
+  const d=-r.U[3*r.elems[3].j+1], da=5*w*L**4/(384*E*I);
+  if(Math.abs(M-Ma)/Ma<0.001 && Math.abs(d-da)/da<0.001){ el.textContent="çözücü öz-doğrulama: geçti ✓"; el.className="ok"; }
+  else { el.textContent="çözücü öz-doğrulama: BAŞARISIZ — sonuçları kullanmayın"; el.className="bad"; }
+}
+
+// ===== Tekil hesap modulleri (Excel ile ayni formuller) =====
+const CALCS={
+ grades:{S235:{fy:235,fu:360,bw:0.8},S275:{fy:275,fu:430,bw:0.85},S355:{fy:355,fu:510,bw:0.9}},
+ chi(lb,alpha){ alpha=alpha||0.49; if(lb<=0) return 1;
+   const phi=0.5*(1+alpha*(lb-0.2)+lb*lb);
+   return Math.min(1,1/(phi+Math.sqrt(Math.max(phi*phi-lb*lb,1e-6)))); },
+
+ kiris(o){
+   const p=PROFILES[o.prof], fy=this.grades[o.grade].fy, Lmm=o.L*1000;
+   const wserv=(o.w+(o.sw?p.kg:0))*9.81/1000, wU=wserv*o.SF;
+   const PU=o.P*9.81*o.SF, Ps=o.P*9.81;
+   const M= !o.konsol ? wU*Lmm*Lmm/8+PU*Lmm/4 : wU*Lmm*Lmm/2+PU*Lmm;
+   const V= !o.konsol ? wU*Lmm/2+PU/2 : wU*Lmm+PU;
+   const EI=210000*p.Iy*1e4;
+   const d= !o.konsol ? 5*wserv*Math.pow(Lmm,4)/(384*EI)+Ps*Math.pow(Lmm,3)/(48*EI)
+                      : wserv*Math.pow(Lmm,4)/(8*EI)+Ps*Math.pow(Lmm,3)/(3*EI);
+   let lamLT=0, chiLT=1;
+   if(p.t==="I" && o.Lb>0){
+     lamLT=0.9*(o.Lb*1000/(p.iz*10))/(93.9*Math.sqrt(235/fy));
+     chiLT=this.chi(lamLT);
+   }
+   const MbRd=chiLT*p.Wel*1000*fy;
+   const sigma=M/(p.Wel*1000), uM=M/MbRd;
+   const tau=V/(p.Av*100), uV=tau/(fy/Math.sqrt(3));
+   const dlim=Lmm/o.n, uD=d/dlim;
+   const worst=Math.max(uM,uV,uD);
+   return {M,V,sigma,tau,d,dlim,lamLT,chiLT,MbRd,uM,uV,uD,worst,ok:worst<=1,kgm:p.kg};
+ },
+
+ kolon(o){
+   const p=PROFILES[o.prof], fy=this.grades[o.grade].fy;
+   const imin=Math.min(p.iy,p.iz);
+   const lam=o.K*o.L*1000/(imin*10);
+   const lb=lam/(93.9*Math.sqrt(235/fy));
+   const chi=this.chi(lb);
+   const NRd=chi*p.A*100*fy/9.81, NEd=o.P*o.SF;
+   return {imin,lam,lb,chi,NRd,NEd,u:NEd/NRd,ok:NEd/NRd<=1};
+ },
+
+ kaynak(o){
+   const g=this.grades[o.grade];
+   const a=0.707*o.wleg;
+   const fvwd=g.fu/(Math.sqrt(3)*g.bw*1.25);
+   const FRd=fvwd*a*o.L/9.81, FEd=o.F*o.SF;
+   return {a,fvwd,FRd,FEd,u:FEd/FRd,ok:FEd/FRd<=1,warn:(a<3||o.L<30||o.L<6*a)};
+ },
+
+ bolts:{M8:{d:8,d0:9,As:36.6},M10:{d:10,d0:11,As:58},M12:{d:12,d0:13,As:84.3},
+        M16:{d:16,d0:18,As:157},M20:{d:20,d0:22,As:245},M24:{d:24,d0:26,As:353},
+        M27:{d:27,d0:30,As:459},M30:{d:30,d0:33,As:561}},
+ bcls:{"4.6":400,"5.6":500,"8.8":800,"10.9":1000},
+ civata(o){
+   const b=this.bolts[o.size], fub=this.bcls[o.cls], fu=this.grades[o.plate].fu;
+   const av=o.cls==="10.9"?0.5:0.6;
+   const FvRd1=av*fub*b.As/1.25/9.81;
+   const ab=Math.min(o.e1/(3*b.d0), o.p1>0?o.p1/(3*b.d0)-0.25:1, fub/fu, 1);
+   const k1=Math.min(2.8*o.e2/b.d0-1.7, 2.5);
+   const FbRd1=k1*ab*fu*b.d*o.t/1.25/9.81;
+   const capV=Math.min(FvRd1*o.nB*o.m, FbRd1*o.nB);
+   const FtRd1=0.9*fub*b.As/1.25/9.81, capT=FtRd1*o.nB;
+   const FvEd=o.Fv*o.SF, FtEd=o.Ft*o.SF;
+   const uV=FvEd/capV, uT=FtEd>0?FtEd/capT:0;
+   const uC=FvEd/(FvRd1*o.nB*o.m)+(FtEd>0?FtEd/(1.4*capT):0);
+   const worst=Math.max(uV,uT,uC);
+   return {d0:b.d0,FvRd1,ab,k1,FbRd1,FtRd1,capV,capT,uV,uT,uC,worst,ok:worst<=1};
+ },
+
+ terrains:{"0 - Deniz / kıyı":{z0:0.003,zmin:1},"I - Göl kıyısı, düz engelsiz":{z0:0.01,zmin:1},
+           "II - Açık arazi (tarla)":{z0:0.05,zmin:2},"III - Banliyö / sanayi / orman":{z0:0.3,zmin:5},
+           "IV - Yoğun şehir":{z0:1.0,zmin:10}},
+ ruzgar(o){
+   const t=this.terrains[o.terrain], ze=Math.max(o.z,t.zmin);
+   const kr=0.19*Math.pow(t.z0/0.05,0.07);
+   const vm=kr*Math.log(ze/t.z0)*o.vb;
+   const Iv=1/Math.log(ze/t.z0);
+   const qp=(1+7*Iv)*0.5*1.25*vm*vm;
+   const F=o.cf*qp*o.A;
+   return {ze,kr,vm,Iv,qp,F,Fkg:F/9.81};
+ },
+
+ deprem(o){
+   const TA=0.2*o.SD1/o.SDS, TB=o.SD1/o.SDS;
+   const Sae=o.T<TA?(0.4+0.6*o.T/TA)*o.SDS:(o.T<=TB?o.SDS:o.SD1/o.T);
+   const Ra=o.T<=TB?o.D+(o.R/o.I-o.D)*o.T/TB:o.R/o.I;
+   const SaR=Math.max(Sae/Ra,0.04*o.I*o.SDS);
+   return {TA,TB,Sae,Ra,SaR,Vt:o.W*SaR};
+ }
+};
+
+
+// ===================== sekmeler =====================
+const CQ=id=>document.getElementById(id);
+const nf=(v,d)=>(+v).toLocaleString("tr-TR",{maximumFractionDigits:d===undefined?1:d,minimumFractionDigits:0});
+const pct=v=>`<span class="uc${v>1?" hot":""}">${(v*100).toFixed(0)}%</span>`;
+const chip=ok=>`<span class="chip ${ok?"ok":"bad"}">${ok?"UYGUN":"YETERSİZ"}</span>`;
+function rows(list){ return list.map(r=>r.length===1?`<tr class="hd"><td colspan="2">${r[0]}</td></tr>`:`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join(""); }
+
+function fillProfSelects(){
+  const opts=Object.keys(PROFILES).map(p=>`<option>${p}</option>`).join("");
+  CQ("ki-prof").innerHTML=opts; CQ("ki-prof").value="IPE 160";
+  CQ("ko-prof").innerHTML=opts; CQ("ko-prof").value="Kutu 100x100x4";
+}
+
+function uKiris(){
+  const r=CALCS.kiris({prof:CQ("ki-prof").value,grade:CQ("ki-grade").value,
+    konsol:CQ("ki-mesnet").value.startsWith("Konsol"),L:+CQ("ki-L").value,P:+CQ("ki-P").value,
+    w:+CQ("ki-w").value,sw:CQ("ki-sw").checked,SF:+CQ("ki-sf").value,n:+CQ("ki-n").value,Lb:+CQ("ki-lb").value});
+  CQ("r-kiris").innerHTML=rows([
+    ["Eğilme"],["Moment M",nf(r.M/9810,2)+" kg·m"],["Gerilme σ",nf(r.sigma)+" N/mm²"],
+    ["Yanal burulma χLT",r.chiLT<1?nf(r.chiLT,3)+" (λ̄LT="+nf(r.lamLT,2)+")":"1,00 — kayıp yok"],
+    ["Kapasite Mb,Rd",nf(r.MbRd/9810,2)+" kg·m"],["Eğilme kullanım oranı",pct(r.uM)],
+    ["Kesme"],["Kesme kuvveti V",nf(r.V/9.81)+" kg"],["Kayma gerilmesi τ",nf(r.tau)+" N/mm²"],["Kesme kullanım oranı",pct(r.uV)],
+    ["Sehim (servis yükle)"],["Hesaplanan δ",nf(r.d,2)+" mm"],["İzin verilen L/n",nf(r.dlim,2)+" mm"],["Sehim kullanım oranı",pct(r.uD)],
+    ["Sonuç"],["Profil öz ağırlığı",nf(r.kgm)+" kg/m"],["En yüksek oran",pct(r.worst)],["GENEL SONUÇ",chip(r.ok)]]);
+}
+function uKolon(){
+  const kmap={"İki ucu mafsallı (K=1,0)":1.0,"Alt uç ankastre, üst uç serbest (K=2,1)":2.1,
+              "Alt uç ankastre, üst uç mafsallı (K=0,8)":0.8,"İki ucu ankastre (K=0,65)":0.65};
+  const r=CALCS.kolon({prof:CQ("ko-prof").value,grade:CQ("ko-grade").value,L:+CQ("ko-L").value,
+    K:kmap[CQ("ko-uc").value],P:+CQ("ko-P").value,SF:+CQ("ko-sf").value});
+  CQ("r-kolon").innerHTML=rows([
+    ["Burkulma"],["En küçük atalet yarıçapı i",nf(r.imin,2)+" cm"],
+    ["Narinlik λ",nf(r.lam)+(r.lam>200?" ⚠ çok narin":"")],["Boyutsuz narinlik λ̄",nf(r.lb,2)],
+    ["Azaltma katsayısı χ",nf(r.chi,3)],
+    ["Sonuç"],["Taşıma kapasitesi χ·A·fy",nf(r.NRd)+" kg"],["Hesap yükü (yük×GK)",nf(r.NEd)+" kg"],
+    ["Kullanım oranı",pct(r.u)],["GENEL SONUÇ",chip(r.ok)]]);
+}
+function uKaynak(){
+  const r=CALCS.kaynak({grade:CQ("ka-grade").value,wleg:+CQ("ka-w").value,L:+CQ("ka-L").value,F:+CQ("ka-F").value,SF:+CQ("ka-sf").value});
+  CQ("r-kaynak").innerHTML=rows([
+    ["Kapasite"],["Boğaz kalınlığı a",nf(r.a,2)+" mm"],["Kaynak dayanımı fvw,d",nf(r.fvwd)+" N/mm²"],
+    ["Kaynak kapasitesi FRd",nf(r.FRd)+" kg"],
+    ["Sonuç"],["Hesap kuvveti (F×GK)",nf(r.FEd)+" kg"],["Kullanım oranı",pct(r.u)],["GENEL SONUÇ",chip(r.ok)]])
+    +(r.warn?'<tr><td colspan="2" class="warnline">⚠ Minimum koşul: a ≥ 3 mm, L ≥ 30 mm ve L ≥ 6a sağlanmalı.</td></tr>':"");
+}
+function uCivata(){
+  const r=CALCS.civata({size:CQ("cv-size").value,cls:CQ("cv-cls").value,nB:+CQ("cv-n").value,m:+CQ("cv-m").value,
+    t:+CQ("cv-t").value,plate:CQ("cv-plate").value,e1:+CQ("cv-e1").value,p1:+CQ("cv-p1").value,e2:+CQ("cv-e2").value,
+    Fv:+CQ("cv-Fv").value,Ft:+CQ("cv-Ft").value,SF:+CQ("cv-sf").value});
+  CQ("r-civata").innerHTML=rows([
+    ["Tek cıvata kapasiteleri"],["Kesme Fv,Rd",nf(r.FvRd1)+" kg"],
+    ["Ezilme Fb,Rd (αb="+nf(r.ab,3)+", k1="+nf(r.k1,2)+")",nf(r.FbRd1)+" kg"],["Çekme Ft,Rd",nf(r.FtRd1)+" kg"],
+    ["Birleşim"],["Toplam kesme kapasitesi",nf(r.capV)+" kg"],["Kesme kullanım oranı",pct(r.uV)],
+    ["Toplam çekme kapasitesi",nf(r.capT)+" kg"],["Çekme kullanım oranı",pct(r.uT)],
+    ["Birleşik etki",pct(r.uC)],
+    ["Sonuç"],["En yüksek oran",pct(r.worst)],["GENEL SONUÇ",chip(r.ok)]]);
+}
+function uRuzgar(){
+  const r=CALCS.ruzgar({vb:+CQ("rz-vb").value,terrain:CQ("rz-ter").value,z:+CQ("rz-z").value,cf:+CQ("rz-cf").value,A:+CQ("rz-A").value});
+  CQ("r-ruzgar").innerHTML=rows([
+    ["Rüzgar profili"],["Arazi katsayısı kr",nf(r.kr,3)],["Ortalama hız vm",nf(r.vm)+" m/s"],
+    ["Türbülans şiddeti Iv",nf(r.Iv,3)],["Tepe hız basıncı qp",nf(r.qp)+" N/m² ("+nf(r.qp/1000,2)+" kN/m²)"],
+    ["Sonuç"],["Rüzgar kuvveti F=cf·qp·A",nf(r.F)+" N"],["Rüzgar kuvveti",nf(r.Fkg)+" kg"]]);
+}
+function uDeprem(){
+  const r=CALCS.deprem({SDS:+CQ("dp-sds").value,SD1:+CQ("dp-sd1").value,T:+CQ("dp-T").value,
+    R:+CQ("dp-R").value,D:+CQ("dp-D").value,I:+CQ("dp-I").value,W:+CQ("dp-W").value});
+  CQ("r-deprem").innerHTML=rows([
+    ["Spektrum"],["Köşe periyotları TA / TB",nf(r.TA,3)+" / "+nf(r.TB,3)+" s"],
+    ["Elastik spektral ivme Sae",nf(r.Sae,3)+" g"],["Azaltma katsayısı Ra",nf(r.Ra,2)],
+    ["Azaltılmış ivme SaR",nf(r.SaR,3)+" g"],
+    ["Sonuç"],["Eşdeğer deprem yükü Vt",nf(r.Vt)+" kg"],["Ağırlığa oranı",(r.SaR*100).toFixed(1)+"%"]]);
+}
+function renderPtbl(){
+  const q=(CQ("psearch").value||"").toLocaleLowerCase("tr-TR");
+  const tb=document.querySelector("#ptbl tbody");
+  tb.innerHTML=Object.entries(PROFILES).filter(([n])=>n.toLocaleLowerCase("tr-TR").includes(q))
+    .map(([n,p])=>`<tr><td>${n}</td><td>${p.h}</td><td>${p.b}</td><td>${p.A}</td><td>${p.kg}</td><td>${p.Iy}</td><td>${p.Wel}</td><td>${p.Iz}</td><td>${p.iy}</td><td>${p.iz}</td><td>${p.Av}</td></tr>`).join("");
+}
+let baslatildi=false;
+function init(){
+  if(baslatildi || !document.getElementById("ntbl")) return;
+  baslatildi=true;
+  fillProfSelects(); selfTest(); renderPtbl(); loadExample("portal");
+  window.addEventListener("resize",drawGeo);
+  try{ const w=document.getElementById("sheetwrap");
+    if(w && window.ResizeObserver){ let lw=0;
+      new ResizeObserver(()=>{ const cw=w.clientWidth; if(cw>0 && cw!==lw){ lw=cw; drawGeo(); } }).observe(w); } }catch(e){}
+}
+
+return {init,run,addNode,addMember,delNode,delMember,loadExample,saveJSON,loadJSON,setDiag,drawGeo,renderPtbl,uKiris,uKolon,uKaynak,uCivata,uRuzgar,uDeprem,PROFILES,CALCS, get nodes(){return nodes}, get members(){return members}};
+})();
+
+/* ---- çelik modüllerine özel biçimlendirme ---- */
+const CELIK_CSS = `<style>
+ .celik .hd td{font-weight:700;color:var(--accent);text-transform:uppercase;font-size:10.5px;
+   letter-spacing:.06em;padding-top:8px;background:transparent}
+ .celik table td:first-child{color:var(--muted)}
+ .celik table td:last-child{font-weight:600;color:var(--ink)}
+ .celik .uc{font-weight:700;color:var(--ok)}
+ .celik .uc.hot{color:#d9534f}
+ .celik .chip.bad{background:rgba(217,83,79,.14);color:#d9534f}
+ .celik .err{color:#d9534f;font-weight:600;padding:8px 0}
+ .celik .warnline td{color:var(--warn);font-size:11.5px}
+ .celik .del{background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;
+   padding:1px 7px;font-size:11px;cursor:pointer;font-family:inherit}
+ .celik .del:hover{border-color:var(--warn);color:var(--warn)}
+ .celik .tblwrap{overflow-x:auto}
+ .celik input[type=checkbox].chk{width:16px;height:16px;accent-color:var(--accent)}
+ .celik #sheetwrap{background:var(--res);border:1px solid var(--line);border-radius:var(--r-sm);
+   overflow:hidden;margin-top:8px}
+ .celik #sheet{display:block;width:100%}
+ .celik .diagbar{display:flex;gap:5px;flex-wrap:wrap}
+ .celik .diagbar button{background:var(--panel-2);border:1px solid var(--line);color:var(--muted);
+   border-radius:7px;padding:4px 11px;font-size:12px;cursor:pointer;font-family:inherit}
+ .celik .diagbar button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+ .celik .notes{margin:8px 0 0;padding-left:16px;font-size:11.5px;color:var(--muted);line-height:1.5}
+ .celik .notes li{margin-bottom:3px}
+ .celik #selftest{font-size:11.5px}
+ .celik #selftest.ok{color:var(--ok)} .celik #selftest.bad{color:#d9534f;font-weight:700}
+ .celik .tool{background:var(--panel-2);border:1px solid var(--line);color:var(--ink-2);
+   border-radius:var(--r-sm);padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;
+   font-weight:500;display:inline-flex;align-items:center;line-height:1.35;
+   transition:border-color .18s,color .18s,background .18s,transform .12s}
+ .celik .tool:hover{border-color:var(--line-2);color:var(--ink);transform:translateY(-1px)}
+ .celik button.primary{background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);
+   border-radius:var(--r-sm);padding:5px 13px;font-size:12px;font-weight:600;cursor:pointer;
+   font-family:inherit;line-height:1.35;
+   box-shadow:0 1px 10px -3px rgba(var(--accent-glow),.55);
+   transition:filter .18s,transform .12s,box-shadow .18s}
+ .celik button.primary:hover{filter:brightness(1.08);transform:translateY(-1px);
+   box-shadow:0 3px 16px -4px rgba(var(--accent-glow),.7)}
+ .celik button.primary:active{transform:none}
+ .celik #exsel{width:auto}
+</style>`;
+
+
+MOD.push({grup:"Çelik", id:"cerceve", ad:"Çerçeve Analizi", baslik:"Çerçeve Analizi ve Eleman Tahkikleri",
+ lead:"Matris deplasman yöntemiyle düzlem çerçeve çözümü; mesnet tepkileri, iç kuvvet diyagramları ve çubuk tahkikleri.",
+ html:CELIK_CSS+`<div class="celik">
+ <div class="card"><h3>Genel Ayarlar</h3><div class="grid">
+   <div><label for="sf">Güvenlik katsayısı</label>
+     <input type="number" id="sf" value="1.5" step="0.1" min="1" oninput="CH.drawGeo()"></div>
+   <div><label for="nsub">Bölme sayısı <span style="opacity:.7">(çubuk başına)</span></label>
+     <input type="number" id="nsub" value="8" min="2" max="20" step="1"></div>
+   <div><label for="selfw">Öz ağırlık</label>
+     <input type="checkbox" id="selfw" class="chk" checked> <span style="font-size:11.5px;color:var(--muted)">dahil</span></div>
+   <div><label>Çözücü durumu</label><div id="selftest" style="padding-top:6px">—</div></div>
+ </div></div>
+
+ <div class="card"><h3>Düğümler</h3>
+   <div class="tblwrap"><table id="ntbl">
+     <thead><tr><th>#</th><th>x (m)</th><th>y (m)</th><th>Mesnet</th><th>Fx (kg)</th><th>Fy (kg)</th><th>M (kg·m)</th><th></th></tr></thead>
+     <tbody></tbody></table></div>
+   <div style="margin-top:8px"><button class="tool" onclick="CH.addNode()">+ Düğüm ekle</button></div>
+   <div class="note">Koordinat m, yük kg (sağa + / yukarı +), moment kg·m (saat tersi +). Aşağı yük için eksi girin.</div>
+ </div>
+
+ <div class="card"><h3>Çubuklar</h3>
+   <div class="tblwrap"><table id="mtbl">
+     <thead><tr><th>#</th><th>i</th><th>j</th><th>Profil</th><th>Çelik</th><th>i ucu</th><th>j ucu</th><th>w (kg/m)</th><th></th></tr></thead>
+     <tbody></tbody></table></div>
+   <div style="margin-top:8px;display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+     <button class="tool" onclick="CH.addMember()">+ Çubuk ekle</button>
+     <select id="exsel" onchange="CH.loadExample(this.value)" style="width:auto;padding:4px 9px">
+       <option value="">Örnek yükle…</option><option value="beam">Basit kiriş</option>
+       <option value="portal">Portal çerçeve</option><option value="truss">Kafes kiriş</option></select>
+     <button class="primary" onclick="CH.run()">Hesapla</button>
+     <button class="tool" onclick="CH.saveJSON()">Modeli indir (.json)</button>
+     <label class="tool" style="cursor:pointer">Model yükle
+       <input type="file" accept=".json" style="display:none" onchange="CH.loadJSON(this)"></label>
+   </div>
+   <div class="note">w: çubuk boyunca yayılı yük, aşağı yönde pozitif.</div>
+ </div>
+
+ <div class="card"><h3>Diyagram</h3>
+   <div class="diagbar">
+     <button class="on" data-d="geo" onclick="CH.setDiag('geo')">Geometri</button>
+     <button data-d="def" onclick="CH.setDiag('def')">Şekil değiştirme</button>
+     <button data-d="M" onclick="CH.setDiag('M')">Moment (M)</button>
+     <button data-d="V" onclick="CH.setDiag('V')">Kesme (V)</button>
+     <button data-d="N" onclick="CH.setDiag('N')">Normal (N)</button>
+   </div>
+   <div id="sheetwrap"><canvas id="sheet" height="520"></canvas></div>
+   <div class="note">Moment sarkma (+) çekme tarafına çizilir. Normal kuvvette kızıl = basınç, mavi = çekme.</div>
+ </div>
+
+ <div class="card"><h3>Sonuçlar</h3>
+   <div id="results" hidden><div id="resbody"></div></div>
+   <div id="cerceve_bos" class="note">Modeli kurup <b>Hesapla</b>ya basın.</div>
+   <ul class="notes">
+     <li>İç kuvvetler doğrusal-elastik analizden gelir; tahkiklerde iç kuvvetler güvenlik katsayısıyla, sehimler katsayısız (servis) yüklerle değerlendirilir.</li>
+     <li>Gerilme tahkiki elastik birleşik gerilme (N/A + M/Wel ≤ fy), kesme τ ≤ fy/√3, burkulma EN 1993-1-1 c eğrisi (α=0,49), Cm=1 varsayımıyla.</li>
+     <li>Burkulma boyu = çubuk boyu (K=1); yanal ötelenen çerçevelerde kolon burkulma boyunu ayrıca değerlendirin.</li>
+     <li>Yanal burulma (LTB) bu analizde kontrol edilmez — düzlem dışı desteklenmemiş I kirişleri Kiriş modülüyle kontrol edin.</li>
+     <li>E = 210.000 N/mm²; 1 kg = 9,81 N.</li>
+   </ul>
+ </div></div>`,
+ calc:function(){
+   if(!$('ntbl')) return;
+   CH.init();
+   const r=$('results'), b=$('cerceve_bos');
+   if(r && b) b.style.display = r.hidden ? '' : 'none';
+ }});
+
+
+MOD.push({grup:"Çelik", id:"c_kiris", ad:"Kiriş", baslik:"Kiriş / Konsol",
+ lead:"Gerilme + kesme + sehim + yanal burulma. Excel'deki Kiriş sayfasıyla aynı formüller.",
+ html:CELIK_CSS+`<div class="celik">
+ <div class="card"><h3>Giriş</h3><div class="grid">
+     <div><label for="ki-prof">Profil</label><select id="ki-prof"><option selected>IPE 160</option></select></div>
+     <div><label for="ki-grade">Çelik kalitesi</label><select id="ki-grade"><option>S235</option><option>S275</option><option>S355</option></select></div>
+     <div><label for="ki-mesnet">Mesnet durumu</label><select id="ki-mesnet"><option selected>Basit kiriş (iki ucu mesnetli)</option><option>Konsol (tek ucu ankastre)</option></select></div>
+     <div><label for="ki-L">Açıklık / konsol boyu L <span style="opacity:.7">(m)</span></label><input type="number" id="ki-L" value="4" step="0.1"></div>
+     <div><label for="ki-P">Tekil yük P (ortada / uçta) <span style="opacity:.7">(kg — yoksa 0)</span></label><input type="number" id="ki-P" value="0" step="10"></div>
+     <div><label for="ki-w">Yayılı yük w <span style="opacity:.7">(kg/m — yoksa 0)</span></label><input type="number" id="ki-w" value="250" step="10"></div>
+     <div><label for="ki-sw">Öz ağırlık dahil</label><input class="chk" type="checkbox" id="ki-sw" checked></div>
+     <div><label for="ki-sf">Güvenlik katsayısı <span style="opacity:.7">(öneri 1,5)</span></label><input type="number" id="ki-sf" value="1.5" step="0.1"></div>
+     <div><label for="ki-n">Sehim limiti paydası n <span style="opacity:.7">(limit=L/n · kiriş 250, konsol 150)</span></label><input type="number" id="ki-n" value="250" step="10"></div>
+     <div><label for="ki-lb">Yanal destek aralığı Lb <span style="opacity:.7">(m — üst başlık sürekli tutulu ise 0; kutu profilde yok sayılır)</span></label><input type="number" id="ki-lb" value="0" step="0.5"></div>
+ </div></div>
+ <div class="card"><h3>Sonuçlar</h3>
+   <div class="wrap"><table><tbody id="r-kiris"></tbody></table></div>
+   <div class="note">λ̄LT = 0,9·λ̄z basitleştirmesi ve c eğrisi (α=0,49) — güvenli taraftadır, sınırda kalan tasarımda tam Mcr hesabı yapın.</div>
+   <div class="note">Sehim güvenlik katsayısız (servis) yükle, dayanım katsayılı yükle hesaplanır. E = 210.000 N/mm².</div>
+ </div></div>`,
+ calc:function(){ if($('r-kiris')) CH.uKiris(); }});
+
+
+MOD.push({grup:"Çelik", id:"c_kolon", ad:"Kolon", baslik:"Kolon (Basınç Elemanı)",
+ lead:"Eurocode 3 burkulma kontrolü. Excel'deki Kolon sayfasıyla aynı.",
+ html:CELIK_CSS+`<div class="celik">
+ <div class="card"><h3>Giriş</h3><div class="grid">
+     <div><label for="ko-prof">Profil</label><select id="ko-prof"><option selected>Kutu 100x100x4</option></select></div>
+     <div><label for="ko-grade">Çelik kalitesi</label><select id="ko-grade"><option>S235</option><option>S275</option><option>S355</option></select></div>
+     <div><label for="ko-L">Kolon boyu L <span style="opacity:.7">(m — desteklenmeyen boy)</span></label><input type="number" id="ko-L" value="3" step="0.1"></div>
+     <div><label for="ko-uc">Uç bağlantı durumu</label><select id="ko-uc"><option selected>İki ucu mafsallı (K=1,0)</option><option>Alt uç ankastre, üst uç serbest (K=2,1)</option><option>Alt uç ankastre, üst uç mafsallı (K=0,8)</option><option>İki ucu ankastre (K=0,65)</option></select></div>
+     <div><label for="ko-P">Kolona binen yük <span style="opacity:.7">(kg)</span></label><input type="number" id="ko-P" value="3000" step="100"></div>
+     <div><label for="ko-sf">Güvenlik katsayısı</label><input type="number" id="ko-sf" value="1.5" step="0.1"></div>
+ </div></div>
+ <div class="card"><h3>Sonuçlar</h3>
+   <div class="wrap"><table><tbody id="r-kolon"></tbody></table></div>
+   <div class="note">Kolon zayıf ekseninden burkulur (i = min(iy, iz)). c eğrisi α=0,49 — tüm kesitler için güvenli taraftadır.</div>
+   <div class="note">K katsayıları AISC tasarım değerleridir.</div>
+ </div></div>`,
+ calc:function(){ if($('r-kolon')) CH.uKolon(); }});
+
+
+MOD.push({grup:"Çelik", id:"c_kaynak", ad:"Kaynak", baslik:"Köşe Kaynağı",
+ lead:"EN 1993-1-8 basitleştirilmiş yöntem (kuvvet yönünden bağımsız, güvenli).",
+ html:CELIK_CSS+`<div class="celik">
+ <div class="card"><h3>Giriş</h3><div class="grid">
+     <div><label for="ka-grade">Çelik kalitesi (zayıf parça)</label><select id="ka-grade"><option>S235</option><option>S275</option><option>S355</option></select></div>
+     <div><label for="ka-w">Kaynak bacak boyu w <span style="opacity:.7">(mm — boğaz a=0,707·w)</span></label><input type="number" id="ka-w" value="5" step="0.5"></div>
+     <div><label for="ka-L">Toplam etkin kaynak boyu L <span style="opacity:.7">(mm)</span></label><input type="number" id="ka-L" value="200" step="10"></div>
+     <div><label for="ka-F">Kaynağa gelen kuvvet F <span style="opacity:.7">(kg)</span></label><input type="number" id="ka-F" value="2000" step="100"></div>
+     <div><label for="ka-sf">Güvenlik katsayısı (yük) <span style="opacity:.7">(γM2=1,25 formülde)</span></label><input type="number" id="ka-sf" value="1.5" step="0.1"></div>
+ </div></div>
+ <div class="card"><h3>Sonuçlar</h3>
+   <div class="wrap"><table><tbody id="r-kaynak"></tbody></table></div>
+   <div class="note">fvw,d = fu/(√3·βw·γM2); βw: S235 0,80 · S275 0,85 · S355 0,90 (EN 1993-1-8 Tablo 4.1).</div>
+   <div class="note">Minimum koşullar: a ≥ 3 mm, L ≥ 30 mm ve L ≥ 6a.</div>
+ </div></div>`,
+ calc:function(){ if($('r-kaynak')) CH.uKaynak(); }});
+
+
+MOD.push({grup:"Çelik", id:"c_civata", ad:"Cıvata", baslik:"Cıvata Birleşimi",
+ lead:"Kesme + ezilme + çekme + birleşik etki (EN 1993-1-8 Tablo 3.4).",
+ html:CELIK_CSS+`<div class="celik">
+ <div class="card"><h3>Giriş</h3><div class="grid">
+     <div><label for="cv-size">Cıvata boyutu</label><select id="cv-size"><option>M8</option><option>M10</option><option>M12</option><option selected>M16</option><option>M20</option><option>M24</option><option>M27</option><option>M30</option></select></div>
+     <div><label for="cv-cls">Cıvata sınıfı</label><select id="cv-cls"><option>4.6</option><option>5.6</option><option selected>8.8</option><option>10.9</option></select></div>
+     <div><label for="cv-n">Cıvata adedi n</label><input type="number" id="cv-n" value="4" step="1"></div>
+     <div><label for="cv-m">Kesme düzlemi sayısı m <span style="opacity:.7">(tek bindirme 1, çift 2)</span></label><input type="number" id="cv-m" value="1" step="1"></div>
+     <div><label for="cv-t">En ince plaka kalınlığı t <span style="opacity:.7">(mm)</span></label><input type="number" id="cv-t" value="8" step="1"></div>
+     <div><label for="cv-plate">Plaka çeliği</label><select id="cv-plate"><option>S235</option><option>S275</option><option>S355</option></select></div>
+     <div><label for="cv-e1">Kenar mesafesi e1 <span style="opacity:.7">(mm — kuvvet yönünde)</span></label><input type="number" id="cv-e1" value="40" step="5"></div>
+     <div><label for="cv-p1">Cıvata aralığı p1 <span style="opacity:.7">(mm — tek sıra ise 0)</span></label><input type="number" id="cv-p1" value="60" step="5"></div>
+     <div><label for="cv-e2">Yan kenar mesafesi e2 <span style="opacity:.7">(mm)</span></label><input type="number" id="cv-e2" value="30" step="5"></div>
+     <div><label for="cv-Fv">Kesme kuvveti Fv <span style="opacity:.7">(kg)</span></label><input type="number" id="cv-Fv" value="5000" step="100"></div>
+     <div><label for="cv-Ft">Çekme kuvveti Ft <span style="opacity:.7">(kg — yoksa 0)</span></label><input type="number" id="cv-Ft" value="0" step="100"></div>
+     <div><label for="cv-sf">Güvenlik katsayısı (yük)</label><input type="number" id="cv-sf" value="1.5" step="0.1"></div>
+ </div></div>
+ <div class="card"><h3>Sonuçlar</h3>
+   <div class="wrap"><table><tbody id="r-civata"></tbody></table></div>
+   <div class="note">Dişlerin kesme düzleminde olduğu varsayılır (güvenli). αv: 10.9 için 0,5; diğerleri 0,6.</div>
+   <div class="note">Minimumlar: e1 ≥ 1,2·d0, e2 ≥ 1,2·d0, p1 ≥ 2,2·d0 — altındaki değerlerde kapasite zaten düşük çıkar.</div>
+ </div></div>`,
+ calc:function(){ if($('r-civata')) CH.uCivata(); }});
+
+
+MOD.push({grup:"Çelik", id:"c_ruzgar", ad:"Rüzgar Yükü", baslik:"Rüzgar Yükü",
+ lead:"EN 1991-1-4 tepe hız basıncı ve rüzgar kuvveti.",
+ html:CELIK_CSS+`<div class="celik">
+ <div class="card"><h3>Giriş</h3><div class="grid">
+     <div><label for="rz-vb">Temel rüzgar hızı vb <span style="opacity:.7">(m/s — iç bölgelerde 28 yaygın, kıyıda daha yüksek; projeye göre doğrulayın)</span></label><input type="number" id="rz-vb" value="28" step="1"></div>
+     <div><label for="rz-ter">Arazi kategorisi</label><select id="rz-ter"><option>0 - Deniz / kıyı</option><option>I - Göl kıyısı, düz engelsiz</option><option selected>II - Açık arazi (tarla)</option><option>III - Banliyö / sanayi / orman</option><option>IV - Yoğun şehir</option></select></div>
+     <div><label for="rz-z">Yükseklik z <span style="opacity:.7">(m)</span></label><input type="number" id="rz-z" value="6" step="0.5"></div>
+     <div><label for="rz-cf">Kuvvet katsayısı cf <span style="opacity:.7">(bina duvarı ≈1,3 · kafes ≈1,6-2,0 · silindir ≈0,7-1,2)</span></label><input type="number" id="rz-cf" value="1.3" step="0.1"></div>
+     <div><label for="rz-A">Rüzgara dik alan Aref <span style="opacity:.7">(m²)</span></label><input type="number" id="rz-A" value="10" step="1"></div>
+ </div></div>
+ <div class="card"><h3>Sonuçlar</h3>
+   <div class="wrap"><table><tbody id="r-ruzgar"></tbody></table></div>
+   <div class="note">c0=1 (düz arazi), cscd=1 (h<15 m tipik yapılar), ρ=1,25 kg/m³.</div>
+   <div class="note">Çıkan kuvveti (kg) diğer sekmelerde yük olarak kullanabilirsiniz; tek başına etkiyen rüzgar için yük katsayısı 1,5.</div>
+ </div></div>`,
+ calc:function(){ if($('r-ruzgar')) CH.uRuzgar(); }});
+
+
+MOD.push({grup:"Çelik", id:"c_deprem", ad:"Deprem Yükü", baslik:"Deprem Eşdeğer Yükü",
+ lead:"TBDY 2018 — SDS ve SD1 değerlerini AFAD haritasından (tdth.afad.gov.tr) koordinatla alın.",
+ html:CELIK_CSS+`<div class="celik">
+ <div class="card"><h3>Giriş</h3><div class="grid">
+     <div><label for="dp-sds">Kısa periyot ivmesi SDS <span style="opacity:.7">(DD-2, zemin sınıfınıza göre)</span></label><input type="number" id="dp-sds" value="1.0" step="0.05"></div>
+     <div><label for="dp-sd1">1 sn periyot ivmesi SD1</label><input type="number" id="dp-sd1" value="0.4" step="0.05"></div>
+     <div><label for="dp-T">Yapı doğal periyodu T <span style="opacity:.7">(s — yaklaşık T≈0,08·H^0,75 (çelik çerçeve))</span></label><input type="number" id="dp-T" value="0.3" step="0.05"></div>
+     <div><label for="dp-R">Davranış katsayısı R <span style="opacity:.7">(TBDY Tablo 4.1 — bilinmiyorsa 4 güvenli)</span></label><input type="number" id="dp-R" value="4" step="0.5"></div>
+     <div><label for="dp-D">Dayanım fazlalığı D <span style="opacity:.7">(R=8→D=3 · R=4→D=2,5)</span></label><input type="number" id="dp-D" value="2.5" step="0.5"></div>
+     <div><label for="dp-I">Bina önem katsayısı I <span style="opacity:.7">(konut/fabrika 1,0 · okul/hastane 1,5)</span></label><input type="number" id="dp-I" value="1.0" step="0.1"></div>
+     <div><label for="dp-W">Toplam ağırlık W <span style="opacity:.7">(kg — G + n·Q)</span></label><input type="number" id="dp-W" value="10000" step="500"></div>
+ </div></div>
+ <div class="card"><h3>Sonuçlar</h3>
+   <div class="wrap"><table><tbody id="r-deprem"></tbody></table></div>
+   <div class="note">Tek katlı / basit düzenli yapılar için taban kesme kuvvetidir; çok katlıda kat dağıtımı ve düzensizlik kontrolleri TBDY'ye göre ayrıca yapılır.</div>
+   <div class="note">Alt sınır 0,04·I·SDS uygulanır. Deprem kombinasyonda katsayısız kullanılır (G+Q+E).</div>
+ </div></div>`,
+ calc:function(){ if($('r-deprem')) CH.uDeprem(); }});
+
+
+MOD.push({grup:"Çelik", id:"c_profil", ad:"Profil Tablosu", baslik:"Profil Tablosu",
+ lead:"IPE, HEA, HEB ve kutu profillerin kesit değerleri. Tüm çelik modüllerinde aynı tablo kullanılır.",
+ html:CELIK_CSS+`<div class="celik">
+ <div class="card"><h3>Ara</h3><div class="grid">
+   <div><label for="psearch">Profil adı</label>
+     <input id="psearch" placeholder="ipe, hea, kutu…" oninput="CH.renderPtbl()"></div>
+ </div></div>
+ <div class="card"><h3>Kesit Değerleri</h3><div class="wrap"><table id="ptbl">
+   <thead><tr><th>Profil</th><th>h mm</th><th>b mm</th><th>A cm²</th><th>kg/m</th><th>Iy cm⁴</th>
+   <th>Wel cm³</th><th>Iz cm⁴</th><th>iy cm</th><th>iz cm</th><th>Av cm²</th></tr></thead>
+   <tbody></tbody></table></div>
+   <div class="note">Iy / Wel güçlü eksen, Iz zayıf eksen; Av kesme alanı. Değerler üretici katalog
+   ortalamalarıdır, kritik tasarımda üreticinin kendi tablosuyla karşılaştırın.</div>
+ </div></div>`,
+ calc:function(){ if($('ptbl')) { CH.init(); CH.renderPtbl(); } }});
 
 /*__YENI_MODULLER__*/
 /* ============================ ÇALIŞTIRMA ============================ */
