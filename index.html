@@ -222,6 +222,7 @@ h2{font-size:19px;margin:0 0 2px;font-weight:640;letter-spacing:-.025em}
 .rprt{display:none}
 .rprt-imza{display:none}
 .rprt-deger{display:none}
+.rprt-kanvas{display:none}
 
 /* ---------------- mobil kabuk ---------------- */
 #mobilbar,#drawer,#aracpanel{display:none}
@@ -522,9 +523,15 @@ section.on > h2::after{content:"";display:block;height:1px;width:180px;margin:9p
   body.yazdir-tumu #main > section:last-of-type{page-break-after:auto}
   section.on > h2,section.on > .lead,section.on .card{animation:none!important}
   section.on > h2::after{display:none}
-  /* Kâğıt israfını önlemek için uzun kartların bölünmesine izin verilir;
-     bölünmemesi gerekenler: çizimler, sonuç kutuları, tablo satırları. */
-  .czbox,.cz,.o,.res .out{page-break-inside:avoid;break-inside:avoid}
+  /* Bir bölüm (kart/panel) sayfada ikiye bölünmez; sayfaya sığmayacak kadar
+     uzunsa tarayıcı zaten böler. */
+  .card,.celikx section.panel,.res,.rprt-imza{break-inside:avoid;page-break-inside:avoid}
+  /* Yüksek CSS ızgara kutuları sayfalara bölünemiyor; kâğıtta tek sütun akışa
+     çevrilir — hem içerik kaybolmaz hem rapor düzeni tek kolon olur. */
+  .row2,.tool2,.celik .tool2,.celikx .tool2{display:block!important}
+  .row2 > *,.tool2 > *{margin-bottom:8px}
+  .czbox,.cz,.o,.res .out,.rprt,.rprt-kanvas,.tblwrap,.wrap{
+    page-break-inside:avoid;break-inside:avoid}
   .celikx .tool2{display:block}
   h2,h3{break-after:avoid;page-break-after:avoid}
   tr,.o{break-inside:avoid;page-break-inside:avoid}
@@ -607,6 +614,8 @@ section.on > h2::after{content:"";display:block;height:1px;width:180px;margin:9p
 
   /* gömülü tablolardaki alanlar da kutusuz */
   .rprt-deger{display:inline!important;font-weight:650;color:#000;white-space:nowrap}
+  .rprt-kanvas{display:block!important;margin:0 auto;border:.5pt solid #ccc;border-radius:2px}
+  .rprt-sar{display:block}
   /* rapor tablosuna dönüşmeyen tekil alanlar için yedek görünüm */
   .card input,.card select,.card textarea,.celikx input,.celikx select{
     border:none!important;background:transparent!important;box-shadow:none!important;
@@ -15560,16 +15569,24 @@ function raporFiyatGizle(sec){
     });
   });
 }
-/* --- bir form kutusunu (etiket + alan) rapor satırına çevirir --- */
-function raporAlan(kutu){
-  const lb=kutu.querySelector(':scope > label');
-  const el=kutu.querySelector(':scope > input,:scope > select,:scope > textarea');
-  if(!lb||!el) return null;
-  const sp=lb.querySelector('span');
+/* --- bir form kutusunu (etiket + alan) rapor satırına çevirir ---
+   İki yerleşim de desteklenir:
+     A)  <div><label>Etiket <span>(birim)</span></label><input></div>
+     B)  <label>Etiket <input></label>            (çelik modüllerindeki ayar satırları) */
+function etiketMetni(lb){
+  const c=lb.cloneNode(true);
+  c.querySelectorAll('input,select,textarea,button,svg').forEach(x=>x.remove());
+  return c.textContent.replace(/\s+/g,' ').trim();
+}
+function raporSatir(lb, el){
+  if(!lb || !el) return null;
+  if(el.type==='file' || el.type==='hidden') return null;
+  const sp = lb.querySelector(':scope > span');
   let birim = sp ? sp.textContent.replace(/^\s*\(|\)\s*$/g,'').trim() : '';
-  let etiket = lb.textContent;
-  if(sp) etiket = etiket.replace(sp.textContent,'');
-  etiket = etiket.trim();
+  let etiket = etiketMetni(lb);
+  if(sp) etiket = etiket.replace(sp.textContent.replace(/\s+/g,' ').trim(),'').trim();
+  etiket = etiket.replace(/[:\s]+$/,'').trim();
+  if(!etiket) return null;
   /* "m — yoksa 0" gibi uzun açıklamalar birim sütununu şişirir; etikete taşınır */
   if(birim.length>9){ etiket += ' ('+birim+')'; birim=''; }
   let deger='';
@@ -15578,6 +15595,54 @@ function raporAlan(kutu){
   else deger = String(el.value||'').trim();
   if(deger==='') deger='—';
   return {e:etiket, d:deger, b:birim};
+}
+function raporAlan(kutu){
+  if(!kutu || kutu.nodeType!==1) return null;
+  let lb = kutu.matches('label') ? kutu : kutu.querySelector(':scope > label');
+  let el = kutu.matches('input,select,textarea') ? kutu
+         : kutu.querySelector(':scope > input,:scope > select,:scope > textarea');
+  if(!el && lb) el = lb.querySelector('input,select,textarea');
+  return raporSatir(lb, el);
+}
+/* Düz dizilim: <label>…</label><select>…</select><label>…</label><input>…
+   (çelik modüllerinin .frm kutuları böyle) */
+function raporAlanDuz(kap){
+  const sat=[], k=Array.from(kap.children);
+  for(let i=0;i<k.length;i++){
+    if(k[i].tagName!=='LABEL') continue;
+    const lb=k[i];
+    let el=lb.querySelector('input,select,textarea');
+    if(!el){
+      for(let j=i+1;j<k.length;j++){
+        if(k[j].tagName==='LABEL') break;
+        el = k[j].matches('input,select,textarea') ? k[j]
+           : k[j].querySelector('input,select,textarea');
+        if(el){ i=j; break; }
+      }
+    }
+    const r=raporSatir(lb, el);
+    if(r) sat.push(r);
+  }
+  return sat;
+}
+/* Bir kutudan çıkarılabilen rapor satırları — iki yerleşimden verimli olanı */
+function raporSatirlari(kap){
+  const a=[]; Array.from(kap.children).forEach(c=>{ const r=raporAlan(c); if(r) a.push(r); });
+  const b=raporAlanDuz(kap);
+  return b.length>a.length ? b : a;
+}
+/* rapora çevrilecek alan kutularını bulur (.grid dışındakiler dâhil) */
+function raporAlanKaplari(sec){
+  const aday=[];
+  const ekle=e=>{ if(aday.indexOf(e)<0) aday.push(e); };
+  sec.querySelectorAll('.grid').forEach(ekle);
+  sec.querySelectorAll('div,fieldset,p,form').forEach(e=>{
+    if(e.closest('table')) return;
+    if(e.classList.contains('grid')) return;
+    if(raporSatirlari(e).length>=2) ekle(e);
+  });
+  /* iç içe olanlarda yalnız en içteki kalsın */
+  return aday.filter(e=>!aday.some(o=>o!==e && e.contains(o)));
 }
 function raporTablo(satirlar, basl){
   const t=document.createElement('table');
@@ -15633,17 +15698,27 @@ function raporTabloGen(t){
 function raporEnGenis(kapsam){
   let mx=0;
   kapsam.forEach(sec=>{ if(!sec) return;
-    sec.querySelectorAll('.wrap>table,.tblwrap>table,.svgwrap>table').forEach(t=>{
+    sec.querySelectorAll('table').forEach(t=>{
+      if(t.closest('#rprtSayfa')===t.closest('table')&&t.id==='rprtSayfa') return;
+      if(t.closest('table')!==t) return;          /* iç içe tabloyu atla */
       mx=Math.max(mx, raporTabloGen(t)); }); });
   return mx;
 }
 function raporKucult(sec){
   const G=RAPOR_GENislik();
-  sec.querySelectorAll('.wrap,.tblwrap,.svgwrap').forEach(w=>{
-    const t=w.querySelector('table'); if(!t) return;
+  sec.querySelectorAll('table').forEach(t=>{
+    if(t.closest('table')!==t) return;            /* iç içe tabloyu atla */
+    if(t.classList.contains('rprt')) return;      /* rapor tabloları zaten dar */
     const gen=raporTabloGen(t);
     if(gen<=G+8) return;
     const z=Math.max(0.34, Math.min(1, G/(gen*1.02)));
+    /* sarmalayıcı yoksa bir tane oluştur ki zoom yerleşimi bozmasın */
+    let w=t.parentElement;
+    if(!(w.classList.contains('wrap')||w.classList.contains('tblwrap')||w.classList.contains('svgwrap')
+         ||w.classList.contains('rprt-sar'))){
+      w=document.createElement('div'); w.className='rprt-sar rprt-uret';
+      t.parentNode.insertBefore(w,t); w.appendChild(t);
+    }
     w.style.setProperty('--zk', z.toFixed(3));
     w.classList.add('rprt-kucult');
   });
@@ -15661,10 +15736,8 @@ function raporKur(tumu){
   kapsam.forEach(sec=>{
     if(!sec) return;
     /* 1) giriş ızgaraları → tablo */
-    sec.querySelectorAll('.grid').forEach(g=>{
-      const sat=[];
-      Array.from(g.children).forEach(k=>{ const r=raporAlan(k);
-        if(r && !(fiyatGizli && fiyatMi(r.e,r.b))) sat.push(r); });
+    raporAlanKaplari(sec).forEach(g=>{
+      const sat=raporSatirlari(g).filter(r=>!(fiyatGizli && fiyatMi(r.e,r.b)));
       if(!sat.length) return;
       g.classList.add('rprt-gizle');
       g.insertAdjacentElement('afterend', raporTablo(sat,'Girilen değerler'));
@@ -15698,21 +15771,44 @@ function raporKur(tumu){
       el.classList.add('rprt-gizle');
       el.insertAdjacentElement('afterend', sp);
     });
-    /* 4) bölüm numaralandırma */
+    /* 4) kanvas çizimleri görüntüye dondurulur — yazdırma sırasında sayfa yeniden
+       ölçüldüğü için kanvas bitmap'i sıfırlanabiliyor; PNG kopyası bundan etkilenmez */
+    sec.querySelectorAll('canvas').forEach(c=>{
+      if(!(c.width>1 && c.height>1)) return;
+      let veri; try{ veri=c.toDataURL('image/png'); }catch(e){ return; }
+      const img=document.createElement('img');
+      img.className='rprt-uret rprt-kanvas';
+      img.src=veri; img.alt='';
+      img.style.width='100%';
+      /* ekran çözünürlüğünün en fazla 1,7 katına kadar büyütülür — daha fazlası bulanıklaşır */
+      img.style.maxWidth=Math.round(c.width*1.7)+'px';
+      c.classList.add('rprt-gizle');
+      c.insertAdjacentElement('afterend', img);
+    });
+    /* dosya seçme alanları ve etiketleri rapora girmez */
+    sec.querySelectorAll('input[type=file]').forEach(e=>{
+      const l=e.closest('label')||e.parentElement;
+      (l&&l.tagName==='LABEL'?l:e).classList.add('rprt-gizle');
+    });
+    /* 5) bölüm numaralandırma */
     let n=0;
     sec.querySelectorAll('.card > h3, .celikx .panel > h2').forEach(h=>{
       h.setAttribute('data-no', ++n);
     });
-    /* 5) fiyat / maliyet bilgisini rapordan çıkar */
+    /* 6) fiyat / maliyet bilgisini rapordan çıkar */
     raporFiyatGizle(sec);
-    /* 6) geniş tabloları kâğıda sığdır */
+    /* 7) geniş tabloları kâğıda sığdır */
     raporKucult(sec);
-    /* 7) imza bloğu */
+    /* 8) imza bloğu */
     if(!tumu) raporImza(sec);
   });
   raporSayfaKur();
+  /* Buradan sonra calcAll() ÇAĞRILMAZ: modüllerin calc'ı sonuç tablolarını ve
+     notları yeniden ürettiği için raporun dönüşümünü (gizlenen fiyatlar, düz metne
+     çevrilen alanlar) silerdi. Kanvaslar zaten PNG'ye dondurulmuş durumda. */
 }
 function raporSil(){
+  const vardi=!!$('rprtSayfa');
   raporSayfaSil();
   document.querySelectorAll('.rprt-uret').forEach(e=>e.remove());
   document.querySelectorAll('.rprt-gizle').forEach(e=>e.classList.remove('rprt-gizle'));
@@ -15721,6 +15817,7 @@ function raporSil(){
     if(e.getAttribute('style')==='') e.removeAttribute('style'); });
   document.querySelectorAll('[data-no]').forEach(e=>{
     if(e.tagName==='H3'||e.tagName==='H2') e.removeAttribute('data-no'); });
+  if(vardi){ try{ calcAll(); }catch(e){} }
 }
 
 /* Yazdır: varsayılan olarak yalnız açık modül; Shift basılıysa tüm modüller */
