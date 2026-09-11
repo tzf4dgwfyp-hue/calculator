@@ -117,6 +117,58 @@ button.tool svg{width:15px;height:15px;flex:none}
 .scat em{font-style:normal;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;
   background:var(--panel-2);border-radius:20px;padding:1px 6px;flex:none}
 .scat.on em{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+/* ---------------- ana sayfa ---------------- */
+.markyazi{cursor:pointer}
+#sec_anasayfa{padding-bottom:20px}
+.anahero{margin:2px 0 20px}
+.anahero h2{font-size:clamp(22px,3.4vw,31px);letter-spacing:-.025em;margin:0 0 7px;line-height:1.15}
+.anahero h2 b{color:var(--accent);font-weight:inherit}
+.anahero p{color:var(--muted);font-size:13.5px;max-width:72ch;margin:0 0 14px;line-height:1.6}
+.anasay{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.anasay div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:8px 13px;min-width:104px}
+.anasay b{display:block;font-size:19px;font-weight:680;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;line-height:1.15}
+.anasay span{font-size:10.5px;color:var(--muted);letter-spacing:.02em}
+.anabas{display:flex;align-items:baseline;gap:10px;margin:22px 0 10px}
+.anabas h3{font-size:11.5px;font-weight:650;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.08em;margin:0}
+.anabas i{flex:1;height:1px;background:var(--line);font-style:normal}
+.anagrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(232px,1fr))}
+.anakart{position:relative;display:flex;flex-direction:column;gap:7px;text-align:left;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px 14px 12px;font:inherit;color:var(--ink);cursor:pointer;overflow:hidden;
+  transition:border-color .18s,box-shadow .18s,transform .18s var(--ease)}
+.anakart::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(120% 90% at 0% 0%, var(--wash), transparent 62%);transition:opacity .2s}
+.anakart:hover{border-color:var(--line-2);box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.anakart:hover::before{opacity:1}
+.anakart > *{position:relative;z-index:1}
+.anakart .ust{display:flex;align-items:center;gap:9px}
+.anakart .ik{width:19px;height:19px;flex:none;color:var(--accent)}
+.anakart .ad{flex:1;min-width:0;font-size:14px;font-weight:640;letter-spacing:-.01em}
+.anakart .sy{font-size:10.5px;color:var(--muted);background:var(--panel-2);
+  border-radius:20px;padding:1px 7px;flex:none;font-variant-numeric:tabular-nums}
+.anakart .lst{font-size:11.5px;color:var(--muted);line-height:1.55;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.anaalt{margin-top:24px;display:grid;gap:9px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.anaalt div{background:var(--res);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:11px 13px;font-size:12px;color:var(--muted);line-height:1.55}
+.anaalt b.t{color:var(--ink-2);display:block;margin-bottom:2px;font-size:12.5px}
+.anaalt b{color:var(--ink-2)}
+.tool[disabled]{opacity:.4;cursor:not-allowed}
+.tool[disabled]:hover{background:transparent;color:var(--ink-2);border-color:var(--line)}
+.sana{width:100%;display:flex;align-items:center;gap:9px;text-align:left;margin-bottom:4px;
+  background:transparent;border:1px solid transparent;border-radius:9px;
+  color:var(--ink-2);padding:7px 9px;font:inherit;font-size:12.5px;font-weight:560;cursor:pointer;
+  transition:background .16s,color .16s,border-color .16s}
+.sana:hover{background:var(--panel-2);color:var(--ink)}
+.sana.on{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+.sana .ik{width:17px;height:17px;flex:none;opacity:.9}
+@media (max-width:860px){
+  .anagrid{grid-template-columns:1fr}
+  .anahero h2{font-size:23px}
+}
 .smods{display:grid;gap:1px;margin:2px 0 6px 0;padding-left:9px;
   border-left:1px solid var(--line);margin-left:17px}
 .smods button{display:block;width:100%;text-align:left;background:transparent;border:0;
@@ -138,6 +190,38 @@ h2{font-size:19px;margin:0 0 2px;font-weight:640;letter-spacing:-.025em}
 #yazdirBas{display:none;padding:0 0 10px;margin-bottom:12px;border-bottom:1px solid #ccc;
   font-size:11px;color:#444;display:none}
 #yazdirBas b{font-size:13px;color:#000}
+#raporBas{display:none}
+
+/* ---------------- proje bilgileri paneli ---------------- */
+#projepanel .pjkutu{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%) scale(.98);
+  width:min(760px,calc(100% - 28px));max-height:min(86vh,780px);overflow:auto;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow-lg);opacity:.7;transition:transform .24s var(--ease),opacity .24s}
+#projepanel.ac .pjkutu{transform:translate(-50%,-50%);opacity:1}
+#projepanel .pjbas{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:14px 16px;border-bottom:1px solid var(--line)}
+#projepanel .pjbas b{font-size:14px}
+#projepanel .pjbas span{font-size:11.5px;color:var(--muted)}
+#projepanel .pjbas .kapa{margin-left:auto;width:32px;height:32px;border:1px solid var(--line);
+  background:var(--panel-2);border-radius:9px;font-size:18px;line-height:1;color:var(--muted);cursor:pointer}
+#projepanel .pjbas .kapa:hover{color:var(--ink);border-color:var(--line-2)}
+#projepanel .pjgrid{display:grid;gap:10px;padding:14px 16px;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+#projepanel .pjgrid label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}
+#projepanel .pjgrid input{width:100%}
+#projepanel .pjalt{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:12px 16px;border-top:1px solid var(--line)}
+#projepanel .pjsw{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2)}
+#projepanel .pjsw input{width:16px;height:16px;min-width:0}
+#projepanel .pjok{margin-left:auto;background:var(--accent);color:var(--on-accent);
+  border:1px solid var(--accent);border-radius:var(--r-sm);padding:8px 20px;
+  font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+#projepanel .pjok:hover{background:var(--accent-2);border-color:var(--accent-2)}
+
+/* rapor öğeleri — yalnız yazdırmada görünür */
+.rprt{display:none}
+.rprt-imza{display:none}
+.rprt-deger{display:none}
 
 /* ---------------- mobil kabuk ---------------- */
 #mobilbar,#drawer,#aracpanel{display:none}
@@ -459,6 +543,92 @@ section.on > h2::after{content:"";display:block;height:1px;width:180px;margin:9p
   ul.notes,.notes,.note{break-before:avoid;page-break-before:avoid}
   h2{font-size:17px;margin-bottom:1px}
   .lead{margin-bottom:9px}
+
+  /* ================= PROJE SUNUM RAPORU ================= */
+  @page{margin:14mm 13mm 14mm}
+  #projepanel{display:none!important}
+  /* Her sayfada yinelenen üst bilgi: tarayıcılar yalnız <thead>'i yineler,
+     position:fixed içeriğin üstüne biner. Bu yüzden yazdırma anında tüm gövde
+     tek hücreli bir tablonun içine alınır; başlık thead'de durur. */
+  #yazdirBas{display:none!important}
+  #rprtSayfa{width:100%!important;border-collapse:collapse;table-layout:fixed}
+  /* kâğıda sığmayan geniş tablolar orantılı küçültülür (zoom yerleşimi de etkiler) */
+  .rprt-kucult{zoom:var(--zk,1)}
+  .rprt-kucult table{width:max-content!important;max-width:none!important}
+  #rprtSayfa > thead{display:table-header-group}
+  #rprtSayfa > tbody{display:table-row-group}
+  #rprtSayfa > thead > tr > td,#rprtSayfa > tbody > tr > td{
+    padding:0;border:none;vertical-align:top}
+  #rprtUst{padding:0 0 3px;margin:0 0 9px;border-bottom:.6pt solid #999;
+    font-size:9pt;color:#333;line-height:1.35}
+  #rprtUst b{font-size:9pt;color:#000}
+  #main{padding-top:0}
+  /* kaydırma kutuları kâğıtta kırpmasın */
+  .wrap,.tblwrap,.svgwrap,.celikx .tblwrap,#dxf_res .svgwrap{
+    overflow:visible!important;max-height:none!important;border:none!important}
+  #main table{max-width:100%}
+  .mt table.mtbl,.celik table.mtbl,.celikx table{font-size:8.5pt}
+  .mt table.mtbl th,.celik table.mtbl th,.celikx th{font-size:7.5pt;white-space:normal}
+  .mt table.mtbl td,.celik table.mtbl td{padding-right:7px}
+  /* 1. sayfadaki künye bloğu */
+  #raporBas{display:block!important;margin:0 0 12px}
+  #raporBas table{width:100%;border-collapse:collapse;font-size:9.5pt}
+  #raporBas td{border:.6pt solid #bbb;padding:3.5px 7px;vertical-align:top;color:#111}
+  #raporBas td.e{background:#f2f3f6;color:#555;width:15%;white-space:nowrap;font-size:8.5pt;
+    text-transform:uppercase;letter-spacing:.04em}
+  #raporBas .rbas{font-size:15pt;font-weight:700;color:#000;margin:0 0 3px;letter-spacing:-.01em}
+  #raporBas .rack{font-size:10pt;color:#444;margin:0 0 9px}
+
+  /* başlıklar rapor gibi: numaralı, cümle düzeninde */
+  .card > h3,.celikx .panel > h2{text-transform:none!important;letter-spacing:0!important;
+    font-size:11.5pt!important;color:#000!important;font-weight:700!important;
+    margin:0 0 6px!important;padding-bottom:3px;border-bottom:.6pt solid #ddd}
+  .card > h3[data-no]::before,.celikx .panel > h2[data-no]::before{
+    display:inline!important;content:attr(data-no) ".";width:auto!important;height:auto!important;
+    background:none!important;margin:0 6px 0 0;transform:none!important;color:#000;font-weight:700}
+  .card > h3::after{display:none!important}
+  h2{color:#000}
+  .lead{color:#333;font-size:10pt;max-width:none}
+
+  /* form kutuları değil, düz tablo */
+  .rprt-gizle{display:none!important}
+  .rprt{display:table!important;width:100%;border-collapse:collapse;
+    font-size:10pt;margin:0 0 2px}
+  .rprt td{border-bottom:.5pt solid #e4e4e4;padding:3px 6px;vertical-align:baseline}
+  .rprt tr:last-child td{border-bottom:none}
+  .rprt td.e{color:#444;width:auto}
+  .rprt td.d{text-align:right;font-weight:650;color:#000;white-space:nowrap;
+    font-variant-numeric:tabular-nums}
+  .rprt td.b{color:#666;width:1%;white-space:nowrap;padding-left:8px;font-size:9pt}
+  .rprt tr.vurgu td{background:#eef0f8}
+  .rprt tr.vurgu td.d{font-size:11pt}
+  .rprt caption{caption-side:top;text-align:left;font-size:9pt;color:#666;
+    padding:0 0 3px;font-style:italic}
+
+  /* gömülü tablolardaki alanlar da kutusuz */
+  .rprt-deger{display:inline!important;font-weight:650;color:#000;white-space:nowrap}
+  /* rapor tablosuna dönüşmeyen tekil alanlar için yedek görünüm */
+  .card input,.card select,.card textarea,.celikx input,.celikx select{
+    border:none!important;background:transparent!important;box-shadow:none!important;
+    -webkit-appearance:none!important;appearance:none!important;background-image:none!important;
+    padding:0 2px!important;color:#000!important;font-weight:600;outline:none!important}
+  .card button,.celikx button,.dxfx button,.tblwrap+div,.rowbtns,.toolbar{display:none!important}
+  .chip{border:.5pt solid #999;background:#fff;color:#000}
+
+  /* imza bloğu */
+  .rprt-imza{display:block!important;margin-top:16px;break-inside:avoid;page-break-inside:avoid}
+  .rprt-imza table{width:100%;border-collapse:collapse;font-size:9.5pt}
+  .rprt-imza td{border:.6pt solid #bbb;padding:6px 8px;width:33.33%;vertical-align:top;color:#111}
+  .rprt-imza td .r{font-size:8.5pt;color:#555;text-transform:uppercase;letter-spacing:.04em}
+  .rprt-imza td .n{margin-top:3px;font-weight:600;min-height:13px}
+  .rprt-imza td .i{margin-top:26px;border-top:.5pt dotted #999;font-size:8pt;color:#777;padding-top:2px}
+
+  .note{font-size:9.5pt;color:#333;background:#fafafa;border-color:#e0e0e0;border-left-color:#bbb}
+  .note.w{background:#fdf6ec;border-color:#e0c090;border-left-color:#c08a30;color:#000}
+  table{font-size:9pt}
+  th{color:#555}
+  /* tfoot tarayıcıda her sayfada yinelenir; toplam satırı bir kez görünsün */
+  tfoot{display:table-row-group}
 }
 
 /* ---------------- teknik çizimler ---------------- */
@@ -519,10 +689,11 @@ section.on > h2::after{content:"";display:block;height:1px;width:180px;margin:9p
 <body>
 <div id="splash"><div class="tri"><i style="--x:0;--y:0;--i:0;--p:0"></i><i style="--x:-0.5;--y:1;--i:1;--p:8"></i><i style="--x:0.5;--y:1;--i:2;--p:1"></i><i style="--x:-1;--y:2;--i:3;--p:7"></i><i style="--x:0;--y:2;--i:4;--p:40"></i><i style="--x:1;--y:2;--i:5;--p:2"></i><i style="--x:-1.5;--y:3;--i:6;--p:6"></i><i style="--x:-0.5;--y:3;--i:7;--p:5"></i><i style="--x:0.5;--y:3;--i:8;--p:4"></i><i style="--x:1.5;--y:3;--i:9;--p:3"></i></div></div>
 <div id="topbar"><header>
-  <div class="mark"><i style="--x:0;--y:0;--i:0;--p:0"></i><i style="--x:-0.5;--y:1;--i:1;--p:8"></i><i style="--x:0.5;--y:1;--i:2;--p:1"></i><i style="--x:-1;--y:2;--i:3;--p:7"></i><i style="--x:0;--y:2;--i:4;--p:40"></i><i style="--x:1;--y:2;--i:5;--p:2"></i><i style="--x:-1.5;--y:3;--i:6;--p:6"></i><i style="--x:-0.5;--y:3;--i:7;--p:5"></i><i style="--x:0.5;--y:3;--i:8;--p:4"></i><i style="--x:1.5;--y:3;--i:9;--p:3"></i></div>
-  <div>
+  <div class="mark" onclick="anaSayfa()" style="cursor:pointer" title="Ana sayfa"><i style="--x:0;--y:0;--i:0;--p:0"></i><i style="--x:-0.5;--y:1;--i:1;--p:8"></i><i style="--x:0.5;--y:1;--i:2;--p:1"></i><i style="--x:-1;--y:2;--i:3;--p:7"></i><i style="--x:0;--y:2;--i:4;--p:40"></i><i style="--x:1;--y:2;--i:5;--p:2"></i><i style="--x:-1.5;--y:3;--i:6;--p:6"></i><i style="--x:-0.5;--y:3;--i:7;--p:5"></i><i style="--x:0.5;--y:3;--i:8;--p:4"></i><i style="--x:1.5;--y:3;--i:9;--p:3"></i></div>
+  <div class="markyazi" onclick="anaSayfa()" title="Ana sayfa" role="button" tabindex="0"
+       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();anaSayfa();}">
     <h1>Mekanik Tesisat Hesap Aracı</h1>
-    <div class="sub">94 modül · 14 kategori</div>
+    <div class="sub" id="altBilgi">—</div>
   </div>
   <div class="yer" id="yerBilgi"></div>
   <div class="tools">
@@ -530,21 +701,53 @@ section.on > h2::after{content:"";display:block;height:1px;width:180px;margin:9p
     <button class="tool" onclick="document.getElementById('fileIn').click()" title="Kayıtlı .json dosyasını yükle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Yükle</button>
     <button class="tool" id="btnNot" onclick="notlarToggle()" title="Modül notları"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-3-6 3z"/><path d="M9 8h6M9 12h4"/></svg>Notlar</button>
     <button class="tool" onclick="kartlarToggle()" title="Tüm kartları aç / kapat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/></svg>Kartlar</button>
-    <button class="tool" onclick="yazdir(event)" title="Açık modülü yazdır / PDF — Shift ile tüm modüller"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 16h10v5H7z"/></svg>PDF</button>
+    <button class="tool" onclick="projeAc()" title="Proje bilgileri — rapor başlığında görünür"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v13H4z"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M4 12h16"/></svg>Proje</button>
+    <button class="tool" id="btnPdf" onclick="yazdir(event)" title="Açık modülü yazdır / PDF — Shift ile tüm modüller"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 16h10v5H7z"/></svg>PDF</button>
     <input type="file" id="fileIn" accept=".json" style="display:none" onchange="loadJSON(this)">
   </div>
 </header>
 <div id="loadbeam"></div></div>
 
 <div id="yazdirBas"></div>
+<div id="raporBas"></div>
 <div id="shell">
   <aside id="side"></aside>
-  <main id="main"></main>
+  <main id="main"><section id="sec_anasayfa" class="on"></section></main>
+</div>
+
+<div id="projepanel" class="katman">
+  <div class="pjkutu">
+    <div class="pjbas"><b>Proje Bilgileri</b>
+      <span>Yazdırılan raporun başlığında görünür; .json kaydına dahildir.</span>
+      <button class="kapa" onclick="projeKapat()" aria-label="Kapat">×</button></div>
+    <div class="pjgrid">
+      <div><label for="pj_ad">Proje adı</label><input id="pj_ad" type="text" placeholder="Örn. Yıldız Rezidans — Mekanik Tesisat"></div>
+      <div><label for="pj_no">Proje / dosya no</label><input id="pj_no" type="text"></div>
+      <div><label for="pj_isveren">İşveren</label><input id="pj_isveren" type="text"></div>
+      <div><label for="pj_yapi">Yapı / blok / bölüm</label><input id="pj_yapi" type="text"></div>
+      <div><label for="pj_firma">Müellif firma</label><input id="pj_firma" type="text"></div>
+      <div><label for="pj_hazirlayan">Hazırlayan</label><input id="pj_hazirlayan" type="text"></div>
+      <div><label for="pj_kontrol">Kontrol eden</label><input id="pj_kontrol" type="text"></div>
+      <div><label for="pj_rev">Revizyon</label><input id="pj_rev" type="text" placeholder="R00"></div>
+      <div><label for="pj_tarih">Tarih</label><input id="pj_tarih" type="date"></div>
+      <div><label for="pj_yon">Kâğıt yönü</label><select id="pj_yon" onchange="raporYon()">
+        <option value="oto">Otomatik (geniş tabloda yatay)</option>
+        <option value="dikey">Her zaman A4 dikey</option>
+        <option value="yatay">Her zaman A4 yatay</option>
+      </select></div>
+      <div style="grid-column:1/-1"><label for="pj_aciklama">Açıklama / kapsam</label><input id="pj_aciklama" type="text" placeholder="Raporun ilk sayfasında başlığın altında görünür"></div>
+    </div>
+    <div class="pjalt">
+      <label class="pjsw"><input id="pj_imza" type="checkbox" checked> Rapor sonuna imza bloğu ekle</label>
+      <label class="pjsw"><input id="pj_fiyat" type="checkbox" checked> Raporda fiyat / maliyet bilgisi gösterme</label>
+      <button class="pjok" onclick="projeKapat()">Tamam</button>
+    </div>
+  </div>
 </div>
 
 <nav id="mobilbar">
   <button onclick="drawerAc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg><span>Modüller</span></button>
-  <button onclick="window.scrollTo({top:0,behavior:'smooth'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V6m0 0l-6 6m6-6l6 6"/></svg><span>Başa dön</span></button>
+  <button onclick="anaSayfa()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10.5V20h12v-9.5"/><path d="M10 20v-5h4v5"/></svg><span>Ana sayfa</span></button>
   <button onclick="kartlarToggle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/></svg><span>Kartlar</span></button>
   <button onclick="sheetAc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>Araçlar</span></button>
 </nav>
@@ -566,6 +769,7 @@ section.on > h2::after{content:"";display:block;height:1px;width:180px;margin:9p
   <div class="panel-in">
     <div class="tut"></div>
     <div class="sgrid">
+      <button onclick="sheetKapat();projeAc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v13H4z"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M4 12h16"/></svg>Proje bilgileri</button>
       <button onclick="sheetKapat();saveJSON()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h10l4 4v12H5z"/><path d="M9 4v5h6"/><rect x="8" y="13" width="8" height="6" rx="1"/></svg>Kaydet (.json)</button>
       <button onclick="sheetKapat();document.getElementById('fileIn').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Yükle</button>
       <button onclick="sheetKapat();notlarToggle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-3-6 3z"/><path d="M9 8h6M9 12h4"/></svg>Notlar</button>
@@ -1223,7 +1427,7 @@ const DAVLUMBAZ_ZETA = {"Yok":0,"Ayrılma":0.20,"Daralma":0.04,"Dirsek 45°":0.2
 "Flexible kanal (1 m = 1 ad.)":0.30,"Genişleme":0.30,"Pantolon parçası":0.50,"Plenum kutu":0.50,
 "S parçası":0.24,"Taze hava girişi":0.35,"Volüm damperi":0.15,"Yangın damperi":0.19};
 
-MOD.push({grup:"Havalandırma", id:"kanal", ad:"Kanal Kesiti", baslik:"Kanal Kesit ve Slot Difüzör Hesabı",
+MOD.push({grup:"HVAC", id:"kanal", ad:"Kanal Kesiti", baslik:"Kanal Kesit ve Slot Difüzör Hesabı",
  lead:"Debi ve hava hızından kanal kesiti, eşdeğer daire/kare/dikdörtgen ölçüsü; slot difüzör uzunluk-hız-açıklık hesapları.",
  html:`<div class="card"><h3>Kanal Kesiti</h3><div class="grid">
    ${F('kn_debi','Hava debisi','630','m³/h')}
@@ -1287,7 +1491,7 @@ MOD.push({grup:"Havalandırma", id:"kanal", ad:"Kanal Kesiti", baslik:"Kanal Kes
    CZ.cizKanal();
   }});
 
-MOD.push({grup:"Havalandırma", id:"kanalkayip", ad:"Kanal Basınç Kaybı", baslik:"Dikdörtgen Kanal Basınç Kaybı",
+MOD.push({grup:"HVAC", id:"kanalkayip", ad:"Kanal Basınç Kaybı", baslik:"Dikdörtgen Kanal Basınç Kaybı",
  lead:"Kanal parçalarının sürtünme (Swamee-Jain) ve yerel kayıplarını toplayıp sistem basınç kaybını verir.",
  html:(function(){
    let rows="";
@@ -1381,7 +1585,7 @@ MOD.push({grup:"Soğutma & Nem", id:"igk", ad:"Isı Geri Kazanım", baslik:"Isı
    put('im_kat',k,0); put('im_debi',k*V('im_alan'),0);
  }});
 
-MOD.push({grup:"Havalandırma", id:"wcfan", ad:"WC Fan", baslik:"WC / Egzoz Fanı Basınç Kaybı",
+MOD.push({grup:"HVAC", id:"wcfan", ad:"WC Fan", baslik:"WC / Egzoz Fanı Basınç Kaybı",
  lead:"Yuvarlak kanal veya spiro boruda sürtünme + yerel kayıplar ve emniyet paylı toplam fan basıncı.",
  html:`<div class="card"><h3>Giriş</h3><div class="grid">
    ${F('wf_cap','Kanal çapı','200','mm')}
@@ -1416,7 +1620,7 @@ MOD.push({grup:"Havalandırma", id:"wcfan", ad:"WC Fan", baslik:"WC / Egzoz Fan�
      +fmt(hiz,1)+' m/s — konut WC için tavsiye edilen 2,5–3,5 m/s aralığının üzerinde. Kanal çapını büyütmeyi değerlendirin.</div>' : '';
  }});
 
-MOD.push({grup:"Havalandırma", id:"davlumbaz", ad:"Davlumbaz", baslik:"Davlumbaz Debi ve Basınç Kaybı",
+MOD.push({grup:"HVAC", id:"davlumbaz", ad:"Davlumbaz", baslik:"Davlumbaz Debi ve Basınç Kaybı",
  lead:"Davlumbaz emiş debisi, bağlı kanalın kesiti ve aspiratör seçim basıncı.",
  html:`<div class="row2">
   <div class="card"><h3>Emiş Debisi</h3><div class="grid">
@@ -1475,7 +1679,7 @@ MOD.push({grup:"Havalandırma", id:"davlumbaz", ad:"Davlumbaz", baslik:"Davlumba
    put('dv_ozel',ozel,3); put('dv_net',net,2); put('dv_topk',net*V('dv_emn'),2);
  }});
 
-MOD.push({grup:"Havalandırma", id:"tozemme", ad:"Merkezi Toz Emme", baslik:"Merkezi Toz Emme Ünitesi Seçimi",
+MOD.push({grup:"HVAC", id:"tozemme", ad:"Merkezi Toz Emme", baslik:"Merkezi Toz Emme Ünitesi Seçimi",
  lead:"Kritik emiş hattının eşdeğer uzunluğundan cihaz tipi seçimi.",
  html:`<div class="card"><h3>Giriş</h3><div class="grid">
    ${F('tz_kritik','Kritik emiş hattı','63','m')}
@@ -2838,18 +3042,25 @@ function fanDebisi(pts, basinc){            // verilen basınçta modelin verebi
   }
   return 0;
 }
+/* Debide kabul edilen eksik pay: hesaplanan debiyi %10'a kadar altından karşılayan
+   modeller de aday sayılır, aralarından en ucuzu seçilir. Hesap debisi zaten
+   emniyet payları ve yukarı yuvarlamayla şişirildiği için bu pay katalogda bir üst
+   boya sıçramayı önler. */
+const FAN_TOLERANS = 0.10;
 function fanSec(tip, debi, basinc){
   const liste = FAN_DB[tip]||[];
+  const esik = debi*(1-FAN_TOLERANS);
   const adaylar=[];
   for(const [ad,pts] of liste){
     const q=fanDebisi(pts,basinc);
-    if(q>=debi) adaylar.push({ad, q, fiyat: FAN_DB.FIYAT[ad]});
+    if(q>=esik) adaylar.push({ad, q, fiyat: FAN_DB.FIYAT[ad], sapma: debi>0 ? (q-debi)/debi : 0});
   }
   if(!adaylar.length) return {ad:"Karşılanmıyor", not:"Bu debi/basınç için katalogda uygun model yok."};
   const fiyatli = adaylar.filter(a=>a.fiyat!==undefined);
   const havuz = fiyatli.length? fiyatli : adaylar;
-  havuz.sort((a,b)=>(a.fiyat||1e9)-(b.fiyat||1e9));
-  return {...havuz[0], aday:adaylar.length};
+  /* önce fiyat, eşitse debisi büyük olan */
+  havuz.sort((a,b)=>((a.fiyat===undefined?1e9:a.fiyat)-(b.fiyat===undefined?1e9:b.fiyat)) || (b.q-a.q));
+  return {...havuz[0], aday:adaylar.length, tolerans:FAN_TOLERANS};
 }
 
 /* Otopark kesit elemanları: [ad, kol(th|dt), varsayılan hız, serbest alan, varsayılan ölçü1] */
@@ -2930,7 +3141,7 @@ function opKesitHesap(pre, thDebi, dtDebi){
   return [thPa,dtPa];
 }
 
-MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", baslik:"Kapalı Otopark Duman Tahliye ve Taze Hava Hesabı",
+MOD.push({grup:"Otopark ve Yangın", id:"otopark", ad:"Otopark Projelendirme", baslik:"Kapalı Otopark Duman Tahliye ve Taze Hava Hesabı",
  lead:"Çok katlı otoparkta kritik kat duman debisi ile tüm katların günlük havalandırma debisinin büyüğü esas alınır; kesitler ve katalogdan fan seçimi.",
  html:(function(){
    let rows="";
@@ -3046,7 +3257,8 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
     </div></div>
     <div class="note">Karşı basınç, alttaki <b>kesit ve basınç kayıpları</b> tablosundan gelir
     (yerel + sürtünme kayıpları toplamı), emniyet payı eklenip 10 Pa'ya yukarı yuvarlanır.
-    Fan, katalogda bu basınçta istenen debiyi verebilen modeller arasından en düşük fiyatlı olanıdır.
+    Fan, katalogda bu basınçta istenen debiyi <b>%10 toleransla</b> verebilen modeller arasından
+    en ekonomik olanıdır.
     Debiler 1000 m³/h'e yukarı yuvarlanır.<br>
     <b>Emniyet payı ne için:</b> filtre/panjur kirlenmesi, kanal sızdırmazlık kaybı, imalat toleransı,
     fan eğrisinin katalogdan sapması ve hesaba girmeyen küçük ek parçalar. SMACNA/ASHRAE pratiğinde
@@ -3204,9 +3416,11 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
    const thBas=Math.ceil(thPa*emn/10)*10, dtBas=Math.ceil(dtPa*emn/10)*10;
    put('op_thbas',thBas,0); put('op_dtbas',dtBas,0);
    const s1=fanSec('BF',thDebi,thBas), s2=fanSec('DTF',dtDebi,dtBas);
-   put('op_thsec', thDebi>0? s1.ad : "gerekli değil");
+   const fanEt=(x,d)=> !x ? "—" : (x.sapma===undefined || Math.abs(x.sapma)<0.005 ? x.ad
+     : x.ad+"  ("+(x.sapma>0?"+":"−")+fmt(Math.abs(x.sapma)*100,1)+"% debi)");
+   put('op_thsec', thDebi>0? fanEt(s1) : "gerekli değil");
    put('op_thfiyat', thDebi>0 && s1.fiyat!==undefined ? fmt(s1.fiyat,0) : "—");
-   put('op_dtsec', dtDebi>0? s2.ad : "—");
+   put('op_dtsec', dtDebi>0? fanEt(s2) : "—");
    put('op_dtfiyat', dtDebi>0 && s2.fiyat!==undefined? fmt(s2.fiyat,0) : "—");
    const [mThPa,mDtPa]=opKesitHesap('opm', V('opm_th'), V('opm_dt'));
    put('opm_thpa',mThPa,1); put('opm_dtpa',mDtPa,1);
@@ -3223,7 +3437,7 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
      return {h:`<tr><td><b>${kac(g.ad)}</b></td><td>${kac(g.katlar.join(', '))}</td>`+
        `<td>${fmt(g.yangin,0)}</td><td>${fmt(g.normal,0)}</td><td><b>${fmt(g.tasarim,0)}</b></td>`+
        `<td>${kac(g.belirleyen)}</td><td>${fmt(kesit,2)}</td><td>${fmt(n,0)}</td>`+
-       `<td>${perFan>0?fmt(perFan,0):'—'}</td><td>${sec?kac(sec.ad):'gerekli değil'}</td>`+
+       `<td>${perFan>0?fmt(perFan,0):'—'}</td><td>${sec?kac(fanEt(sec)):'gerekli değil'}</td>`+
        `<td>${fiyat!==undefined?fmt(fiyat,0):'—'}</td></tr>`, fiyat:fiyat||0};
    };
    let sh='', sfiyat=0;
@@ -3243,7 +3457,7 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
      (cokSaft
        ? '<b>'+dSaft.length+' duman</b> + <b>'+tSaft.length+' taze hava</b> şaftı tanımlı. '+
          'Toplam kurulu kapasite: duman <b>'+fmt(dToplam,0)+' m³/h</b>, taze hava <b>'+fmt(tToplam,0)+' m³/h</b>'+
-         ' · toplam fan liste fiyatı <b>'+fmt(sfiyat,0)+' USD</b>. '+
+         '<span class="rprt-fiyat"> · toplam fan liste fiyatı <b>'+fmt(sfiyat,0)+' USD</b></span>. '+
          'Şaftlar ayrıldığı için toplam kapasite tek şaftlı çözümden büyüktür: her şaft kendi en kötü '+
          'senaryosuna göre ayrı ayrı boyutlanır.'
        : 'Tüm katlar ortak şaft kullanıyor. Katlara farklı şaft atarsanız (ör. 1. ve 3. bodrum Ş1, '+
@@ -3252,7 +3466,7 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
    CZ.cizOtopark();
   }});
 
-MOD.push({grup:"Yangın & Fan", id:"fansec", ad:"Fan Seçimi", baslik:"Katalogdan Fan Seçimi",
+MOD.push({grup:"Otopark ve Yangın", id:"fansec", ad:"Fan Seçimi", baslik:"Katalogdan Fan Seçimi",
  lead:"Debi ve statik basınca göre basınçlandırma (BF) veya duman tahliye (DTF) fanı seçimi ve alternatif listesi.",
  html:`<div class="card"><h3>Arama</h3><div class="grid">
    ${SEL('fs_tip','Fan tipi',["Basınçlandırma (BF)","Duman Tahliye (DTF)"],"Duman Tahliye (DTF)")}
@@ -3263,34 +3477,42 @@ MOD.push({grup:"Yangın & Fan", id:"fansec", ad:"Fan Seçimi", baslik:"Katalogda
    ${O('fs_sec','En uygun (en ekonomik) model','',1)}
    ${O('fs_fiyat','Liste fiyatı','USD',1)}
    ${O('fs_kap','Bu basınçta verebildiği debi','m³/h')}
+   ${O('fs_sapma','İstenen debiye göre sapma','%')}
    ${O('fs_aday','Uygun model sayısı','adet')}
  </div></div></div>
  <div class="card"><h3>Uygun Modeller (fiyata göre)</h3><div class="wrap"><table>
-   <thead><tr><th>Model</th><th>Bu basınçta debi m³/h</th><th>Rezerv %</th><th>Fiyat USD</th></tr></thead>
+   <thead><tr><th>Model</th><th>Bu basınçta debi m³/h</th><th>Sapma %</th><th>Fiyat USD</th></tr></thead>
    <tbody id="fs_liste"></tbody></table></div>
  <div class="note">Katalog: 121 basınçlandırma + 118 duman tahliye modeli, 1–1200 Pa aralığında performans eğrisi.
- Ara basınçlarda doğrusal enterpolasyon yapılır. Fiyatlar USD ve liste fiyatıdır; güncelliğini kontrol edin.</div></div>`,
+ Ara basınçlarda doğrusal enterpolasyon yapılır.<span class="rprt-fiyat"> Fiyatlar USD ve liste fiyatıdır;
+ güncelliğini kontrol edin.</span></div>
+ <div class="note"><b>Debi toleransı %10:</b> hesaplanan debiyi en fazla %10 eksik karşılayan modeller de aday
+ sayılır ve aralarından <b>en ucuzu</b> seçilir. Hesap debisi emniyet payı ve yukarı yuvarlamayla zaten
+ şişirildiği için bu pay, katalogda gereksiz yere bir üst gövdeye çıkmayı önler. Sapma sütunu eksi ise
+ seçilen fan istenen debinin altındadır — kritik hatlarda sapması artı olan ilk modeli tercih edin.</div></div>`,
  calc:function(){
    const tip = S('fs_tip').startsWith("Basınç") ? 'BF' : 'DTF';
    const debi=V('fs_debi'), bas=V('fs_bas');
+   const esik=debi*(1-FAN_TOLERANS);
    const liste=(FAN_DB[tip]||[]).map(([ad,pts])=>({ad, q:fanDebisi(pts,bas), fiyat:FAN_DB.FIYAT[ad]}))
-     .filter(x=>x.q>=debi && debi>0);
-   liste.sort((a,b)=>(a.fiyat||1e9)-(b.fiyat||1e9));
+     .filter(x=>x.q>=esik && debi>0);
+   liste.sort((a,b)=>((a.fiyat===undefined?1e9:a.fiyat)-(b.fiyat===undefined?1e9:b.fiyat))||(b.q-a.q));
    if(!liste.length){
-     put('fs_sec',"Karşılanmıyor"); put('fs_fiyat',"—"); put('fs_kap',"—"); put('fs_aday',0,0);
+     put('fs_sec',"Karşılanmıyor"); put('fs_fiyat',"—"); put('fs_kap',"—");
+     put('fs_sapma',"—"); put('fs_aday',0,0);
      $('fs_liste').innerHTML='<tr><td colspan="4">Bu debi/basınç için katalogda uygun model bulunamadı.</td></tr>';
      return;
    }
    const b=liste[0];
    put('fs_sec',b.ad); put('fs_fiyat', b.fiyat!==undefined? fmt(b.fiyat,0):"—");
-   put('fs_kap',b.q,0); put('fs_aday',liste.length,0);
+   put('fs_kap',b.q,0); put('fs_sapma',(b.q/debi-1)*100,1); put('fs_aday',liste.length,0);
    $('fs_liste').innerHTML = liste.slice(0,20).map(x=>
      `<tr><td>${x.ad}</td><td>${fmt(x.q,0)}</td><td>${fmt((x.q/debi-1)*100,1)}</td>
       <td>${x.fiyat!==undefined?fmt(x.fiyat,0):"—"}</td></tr>`).join('')
      + (liste.length>20? `<tr><td colspan="4">… ve ${liste.length-20} model daha</td></tr>` : '');
  }});
 
-MOD.push({grup:"Yangın & Fan", id:"otopark2", ad:"Otopark Günlük Havalandırma", baslik:"Otopark Günlük Havalandırma (3 Yöntem)",
+MOD.push({grup:"Otopark ve Yangın", id:"otopark2", ad:"Otopark Günlük Havalandırma", baslik:"Otopark Günlük Havalandırma (3 Yöntem)",
  lead:"Hava değişimi, birim alan ve CO yayılımı yöntemleriyle günlük debi; duman tahliye debisi ve menfez seçimi.",
  html:`<div class="card"><h3>Otopark</h3><div class="grid">
    ${F('o2_alan','Otopark alanı','2700','m²')}
@@ -3373,7 +3595,7 @@ MOD.push({grup:"Yangın & Fan", id:"otopark2", ad:"Otopark Günlük Havalandırm
        +' menfez adedini veya ölçüsünü artırın.</div>' : '';
  }});
 
-MOD.push({grup:"Yangın & Fan", id:"merdiven", ad:"Merdiven Basınçlandırma", baslik:"Merdiven Yuvası Basınçlandırma Fanı",
+MOD.push({grup:"Otopark ve Yangın", id:"merdiven", ad:"Merdiven Basınçlandırma", baslik:"Merdiven Yuvası Basınçlandırma Fanı",
  lead:"EN 12101-6 / NFPA 92'ye göre kapalı kapı sızıntısı ve açık kapı hızı debileri, kanal kaybı ve fan gücü.",
  html:`<div class="row2">
   <div class="card"><h3>Bina ve Kapılar</h3><div class="grid">
@@ -3470,7 +3692,7 @@ MOD.push({grup:"Yangın & Fan", id:"merdiven", ad:"Merdiven Basınçlandırma", 
    CZ.cizMerdiven();
   }});
 
-MOD.push({grup:"Yangın & Fan", id:"jetfan", ad:"Jet Fan Menzili", baslik:"Jet Fan İtme ve Menzil Hesabı",
+MOD.push({grup:"Otopark ve Yangın", id:"jetfan", ad:"Jet Fan Menzili", baslik:"Jet Fan İtme ve Menzil Hesabı",
  lead:"Serbest jet bozunma modeliyle (Vx/V0 = K·D/x) jet fanın hedef hızlara ulaştığı menzil ve itme kuvveti.",
  html:`<div class="card"><h3>Giriş</h3><div class="grid">
    ${F('jf_cap','Fan çapı','315','mm')}
@@ -3528,7 +3750,7 @@ MOD.push({grup:"Yangın & Fan", id:"jetfan", ad:"Jet Fan Menzili", baslik:"Jet F
   }});
 
 const KANAL_ZETA = {dirsek:0.35, te:0.70, damper:0.60, giris:0.50};
-MOD.push({grup:"Yangın & Fan", id:"fanhat", ad:"Kanal Hattı & Fan Gücü", baslik:"Kanal Hattı Basınç Kaybı ve Fan Gücü",
+MOD.push({grup:"Otopark ve Yangın", id:"fanhat", ad:"Kanal Hattı & Fan Gücü", baslik:"Kanal Hattı Basınç Kaybı ve Fan Gücü",
  lead:"Dikdörtgen veya yuvarlak kanal parçalarının sürtünme + yerel kayıpları, panjur hızı, seçilen fan basıncı ve elektrik gücü.",
  html:(function(){
    let rows="";
@@ -3618,7 +3840,7 @@ MOD.push({grup:"Yangın & Fan", id:"fanhat", ad:"Kanal Hattı & Fan Gücü", bas
    put('fh_kw', verim>0 ? fmt((sec+V('fh_rez'))/10000*V('fh_fandebi')*0.002725/verim,4) : "verim sıfır");
  }});
 
-MOD.push({grup:"Havalandırma", id:"havahizi", ad:"Hava Hızı", baslik:"Kanal ve Menfez Hava Hızı",
+MOD.push({grup:"HVAC", id:"havahizi", ad:"Hava Hızı", baslik:"Kanal ve Menfez Hava Hızı",
  lead:"Debi ve kesitten hava hızı; delikli menfezlerde serbest alandan hız hesabı.",
  html:`<div class="row2">
   <div class="card"><h3>Dikdörtgen Kesit</h3><div class="grid">
@@ -3710,7 +3932,7 @@ const MENFEZ_KAT = {
   r:[[125,85,24,0.9,2],[150,145,40,0.9,2],[200,235,65,0.7,2],[225,445,124,0.7,2],[250,555,154,0.8,3.2],
      [315,705,195,0.5,2.5],[355,1105,307,0.6,3.2],[400,1405,390,0.5,3]]}
 };
-MOD.push({grup:"Havalandırma", id:"mahaltaze", ad:"Mahal Taze Hava", baslik:"Mahal Taze Hava Debisi ve Menfez Seçimi",
+MOD.push({grup:"HVAC", id:"mahaltaze", ad:"Mahal Taze Hava", baslik:"Mahal Taze Hava Debisi ve Menfez Seçimi",
  lead:"ASHRAE 62.1 tipi kişi ve alan bazlı taze hava debisi; menfez/difüzör katalog tabloları.",
  html:(function(){
    let rows="";
@@ -4283,7 +4505,7 @@ function kbCiz(){
    </div><div class="kbres" id="kb_ar${a.id}">—</div></div>`).join('')
    : '<div class="note">Henüz damper / panjur eklenmedi.</div>';
 }
-MOD.push({grup:"Havalandırma", id:"kanalbasinc", ad:"Kanal Basıncı (detaylı)", baslik:"Kanal Basınç Kaybı Hesaplayıcı",
+MOD.push({grup:"HVAC", id:"kanalbasinc", ad:"Kanal Basıncı (detaylı)", baslik:"Kanal Basınç Kaybı Hesaplayıcı",
  lead:"Fan karşı basıncı = kanal sürtünmesi + yerel kayıplar + damper/panjur. Sıcaklığa bağlı hava özellikleri, Colebrook-White iteratif sürtünme katsayısı.",
  html:`<style>
  .kbrow{background:var(--res);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px}
@@ -8686,7 +8908,7 @@ MOD.push({grup:"Soğutma & Nem", id:"mt_sogutma", ad:"Pratik Soğutma Yükü", b
  </div></div>`,
  calc:function(){ if($('r-mtsg')){ MT.uSogutma(); CZ.cizSogutma(); } }});
 
-MOD.push({grup:"Havalandırma", id:"mt_havadegisim", ad:"Hava Değişim Katsayısı", baslik:"Hava Değişim Katsayısı ve Debi",
+MOD.push({grup:"HVAC", id:"mt_havadegisim", ad:"Hava Değişim Katsayısı", baslik:"Hava Değişim Katsayısı ve Debi",
  lead:"Mahal hacmi ve kullanım amacına göre saatlik hava değişim sayısı ve gerekli havalandırma debisi — 24 mekân tipi tablosuyla.",
  html:MT_CSS+`<div class="mt">
  <div class="card"><h3>Giriş</h3><div class="grid">`
@@ -8706,7 +8928,7 @@ MOD.push({grup:"Havalandırma", id:"mt_havadegisim", ad:"Hava Değişim Katsayı
  +`</div></div>`,
  calc:function(){ if($('r-mthd')) MT.uHavaDegisim(); }});
 
-MOD.push({grup:"Havalandırma", id:"mt_kanalmetraj", ad:"Kanal Metrajı", baslik:"Kanal Metrajı / Ataşman İcmali",
+MOD.push({grup:"HVAC", id:"mt_kanalmetraj", ad:"Kanal Metrajı", baslik:"Kanal Metrajı / Ataşman İcmali",
  lead:"Düz kanal, dirsek, redüksiyon, silindir ve plaka parçalarının sac alanını hesaplar; en büyük kenara göre sac kalınlığı gruplarına dağıtır.",
  html:MT_CSS+`<div class="mt">
  <div class="card"><h3>Parça listesi</h3>`+MTBL('mt_kmtbl')+`
@@ -8763,7 +8985,7 @@ MOD.push({grup:"Su", id:"mt_boylerdin", ad:"Boyler (DIN 4708)", baslik:"Boyler �
  +`</div></div>`,
  calc:function(){ if($('r-mtbd')) MT.uBoylerDin(); }});
 
-MOD.push({grup:"Yangın & Fan", id:"mt_yangin", ad:"Yangın Kritik Devre", baslik:"Yangın Tesisatı — Kritik Devre ve Pompa",
+MOD.push({grup:"Otopark ve Yangın", id:"mt_yangin", ad:"Yangın Kritik Devre", baslik:"Yangın Tesisatı — Kritik Devre ve Pompa",
  lead:"Sprinkler ve yangın dolabı devrelerinde boru kaybını, emniyetli boru çapını ve pompa basma yüksekliği ile gücünü hesaplar.",
  html:MT_CSS+`<div class="mt">
  <div class="card"><h3>Kritik devre parçaları</h3>`+MTBL('mt_ygtbl')+`
@@ -14982,7 +15204,7 @@ function dxfBaslat(){
   $('#dxf_clearAll').addEventListener('click', function () { results = []; render(); });
 }
 
-MOD.push({grup:"Havalandırma", id:"dxfolcu", ad:"DXF Hücre Ölçüsü", baslik:"DXF Hücre ve Modül Ölçü Çıkarıcı",
+MOD.push({grup:"HVAC", id:"dxfolcu", ad:"Santral Alan Hesabı", baslik:"Klima Santrali Alan ve Ölçü Hesabı — DXF'ten",
  lead:"P-KS klima santrali teknik resim DXF'lerinden hücre ve modül ölçülerini (En × Boy × Yükseklik, mm), yüzey alanını ve malzeme listesini otomatik çıkarır; Excel/CSV/TSV olarak dışarı verir.",
  html:DXF_CSS+"<div class=\"card\"><h3>DXF Dosyaları</h3><div class=\"dxfx\">\n  <div id=\"dxf_drop\">\n    <div><b>DXF dosyalarını buraya sürükleyin</b> veya tıklayıp seçin (birden çok dosya olabilir)</div>\n    <div class=\"hint\">VectorDraw / P-KS teknik resim DXF'leri (AC1021, UTF-8) desteklenir. Ölçüler çizimdeki ölçü zincirlerinden okunur. Dosyalar hiçbir yere gönderilmez, tüm işlem tarayıcıda yapılır.</div>\n    <input id=\"dxf_file\" type=\"file\" multiple accept=\".dxf\">\n  </div>\n  <div class=\"toolbar\" id=\"dxf_bar\" style=\"display:none\">\n    <button class=\"primary\" id=\"dxf_xlsxAll\">Excel indir (tüm sonuçlar)</button>\n    <button id=\"dxf_copyAll\">Tümünü TSV kopyala</button>\n    <button id=\"dxf_csvAll\">Tümünü CSV indir</button>\n    <button id=\"dxf_mCopyAll\">Tüm malzemeleri TSV kopyala</button>\n    <button id=\"dxf_clearAll\">Temizle</button>\n    <span class=\"legend\">\n      <span><i style=\"background:var(--dx-alt)\"></i>Alt kat</span>\n      <span><i style=\"background:var(--dx-ust)\"></i>Üst kat</span>\n      <span><i style=\"background:var(--dx-tam)\"></i>Tam yükseklik (eşanjör)</span>\n    </span>\n  </div>\n  <div id=\"dxf_res\"></div>\n</div></div>\n<div class=\"card\"><h3>Notlar</h3>\n <div class=\"note\">Yükseklikler <b>kasa ölçüsüdür</b>; 150 mm ayak/kaide dahil değildir. Çizim birimi cm → mm çevrilmiştir.</div>\n <div class=\"note\">Yüzey alanı santrala tek kutu gibi bakılarak değil, <b>modül modül</b> hesaplanır:\n her modülde tavan + taban (2 × En × Boy) ve iki yan duvar (2 × Boy × Yükseklik) tam sayılır; hava akışı\n doğrultusundaki ön/arka yüzlerden yalnızca <b>dışarı bakan</b> kısım sayılır — komşu modülle öpüşen bölümde\n sac olmadığı için o bölüm hesaba katılmaz. Kanal/damper ağzı açıklıkları düşülmüş hâli ayrı sütundadır.</div>\n <div class=\"note\">Her sonuç bağımsız kontrollerden geçer; <b>Durum</b> \"Doğrulandı\" değilse ölçüler\n çizimden teyit edilmelidir.</div></div>",
  calc:function(){ if(typeof dxfBaslat==="function") dxfBaslat(); }});
@@ -15123,16 +15345,20 @@ const GRUP_IK={
  "Yerden Isıtma":'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h7a2.2 2.2 0 0 1 0 4.4H10a2.2 2.2 0 0 0 0 4.4h7"/>',
  "Su":'<path d="M12 3.2s6.2 6.4 6.2 10.4a6.2 6.2 0 1 1-12.4 0C5.8 9.6 12 3.2 12 3.2z"/><path d="M9.4 14.4a2.7 2.7 0 0 0 2.7 2.7"/>',
  "Referans":'<path d="M4 4.5h6.4a2 2 0 0 1 1.6.8 2 2 0 0 1 1.6-.8H20v14h-6.4a2 2 0 0 0-1.6.8 2 2 0 0 0-1.6-.8H4z"/><path d="M12 5.3v14"/>',
- "Havalandırma":'<circle cx="12" cy="12" r="2.2"/><path d="M12 9.8c0-3.4.9-5.8 2.6-5.8 1.5 0 2.2 1.8.6 4.1-1 1.5-2.3 1.7-3.2 1.7z"/><path d="M13.9 13.1c2.9 1.7 4.4 3.7 3.6 5.2-.8 1.3-2.6.8-3.4-1.8-.5-1.7.1-2.8.5-3.4z"/><path d="M10.1 13.1c-2.9 1.7-4.4 3.7-3.6 5.2.8 1.3 2.6.8 3.4-1.8.5-1.7-.1-2.8-.5-3.4z"/>',
+ "HVAC":'<circle cx="12" cy="12" r="2.2"/><path d="M12 9.8c0-3.4.9-5.8 2.6-5.8 1.5 0 2.2 1.8.6 4.1-1 1.5-2.3 1.7-3.2 1.7z"/><path d="M13.9 13.1c2.9 1.7 4.4 3.7 3.6 5.2-.8 1.3-2.6.8-3.4-1.8-.5-1.7.1-2.8.5-3.4z"/><path d="M10.1 13.1c-2.9 1.7-4.4 3.7-3.6 5.2.8 1.3 2.6.8 3.4-1.8.5-1.7-.1-2.8-.5-3.4z"/>',
  "Soğutma & Nem":'<path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5L4.2 16.5"/><path d="M12 6.6l-2 1.6M12 6.6l2 1.6M12 17.4l-2-1.6M12 17.4l2-1.6"/>',
  "Havuz & Enerji":'<path d="M3 16.5c1.8-1.9 3.6-1.9 5.4 0s3.6 1.9 5.4 0 3.6-1.9 5.4 0"/><path d="M3 20.5c1.8-1.9 3.6-1.9 5.4 0s3.6 1.9 5.4 0 3.6-1.9 5.4 0"/><path d="M7 13V5.5a2 2 0 0 1 4 0M14 13V5.5a2 2 0 0 1 4 0"/><path d="M7 9h4M14 9h4"/>',
  "Altyapı":'<path d="M3 8h18v12H3z"/><path d="M8 8V4h8v4"/><path d="M6.5 12h11M6.5 16h11"/>',
  "Doğalgaz":'<path d="M12 21.2a4.4 4.4 0 0 0 4.4-4.4c0-3.3-4.4-7.6-4.4-7.6s-4.4 4.3-4.4 7.6A4.4 4.4 0 0 0 12 21.2z"/><path d="M9 3.6h6M12 3.6v3.2"/>',
- "Yangın & Fan":'<path d="M6.2 16.6h11.6l-1.7-2.3V10a4.1 4.1 0 0 0-8.2 0v4.3z"/><path d="M10 19.4a2 2 0 0 0 4 0"/><path d="M12 3.4v2.2"/>',
+ "Otopark ve Yangın":'<path d="M6.2 16.6h11.6l-1.7-2.3V10a4.1 4.1 0 0 0-8.2 0v4.3z"/><path d="M10 19.4a2 2 0 0 0 4 0"/><path d="M12 3.4v2.2"/>',
  "Çelik":'<path d="M5 4.5h14M5 19.5h14M12 4.5v15"/><path d="M8 4.5v2.4M16 4.5v2.4M8 19.5v-2.4M16 19.5v-2.4"/>',
  "Birleşim":'<path d="M8 5.1l4-2.3 4 2.3v4.6l-4 2.3-4-2.3z"/><path d="M12 12v9"/><path d="M10 15h4M10 18h4"/>',
  "Yük & Montaj":'<path d="M12 3v9.4m0 0l-3.4-3.4M12 12.4l3.4-3.4"/><path d="M4.2 16.4h15.6l-1.2 4.4H5.4z"/>'
 };
+function ikonSVG2(d,sinif){
+  return '<svg class="'+(sinif||'ik')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
+         'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
+}
 function ikonSVG(g,sinif){
   const d=GRUP_IK[g]||'<circle cx="12" cy="12" r="8"/>';
   return '<svg class="'+(sinif||'ik')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
@@ -15140,10 +15366,60 @@ function ikonSVG(g,sinif){
 }
 function grupSayi(g){ return MOD.filter(m=>m.grup===g).length; }
 
+/* ---- ana sayfa ---- */
+const ANA_IK='<path d="M4 11.5 12 4l8 7.5"/><path d="M6 10.5V20h12v-9.5"/><path d="M10 20v-5h4v5"/>';
+function cizimSayisi(){
+  return document.querySelectorAll('#main .czbox, #main canvas').length;
+}
+function anaCiz(){
+  const el=$('sec_anasayfa'); if(!el) return;
+  const gl=grupList();
+  const kart = gl.map(g=>{
+    const ms=grupMod(g);
+    return `<button class="anakart" onclick="gotoGrup('${kac(g)}')">
+      <div class="ust">${ikonSVG(g)}<span class="ad">${kac(g)}</span>
+        <span class="sy">${ms.length}</span></div>
+      <div class="lst">${ms.map(m=>kac(m.ad)).join(' · ')}</div>
+    </button>`;
+  }).join('');
+  el.innerHTML = `
+  <div class="anahero">
+    <h2>Mekanik tesisat hesapları,<br><b>tek dosyada ve çevrimdışı.</b></h2>
+    <p>Excel hesap dosyalarından dönüştürülmüş ${MOD.length} mühendislik modülü: ısı kaybı ve kazancından
+    boru ve kanal çaplarına, otopark duman tahliyesinden çelik profil seçimine kadar.
+    Her hesap kendi şemasıyla birlikte gelir ve proje sunumuna uygun PDF olarak yazdırılabilir.
+    Veriler tarayıcıdan dışarı çıkmaz.</p>
+    <div class="anasay">
+      <div><b>${MOD.length}</b><span>HESAP MODÜLÜ</span></div>
+      <div><b>${gl.length}</b><span>KATEGORİ</span></div>
+      <div><b>${cizimSayisi()}</b><span>TEKNİK ŞEMA</span></div>
+      <div><b>0</b><span>DIŞ BAĞLANTI</span></div>
+    </div>
+  </div>
+  <div class="anabas"><h3>Kategoriler</h3><i></i></div>
+  <div class="anagrid">${kart}</div>
+  <div class="anaalt">
+    <div><b class="t">Proje bilgilerini bir kez girin</b>Üst çubuktaki <b>Proje</b> düğmesinden proje adı, işveren,
+      revizyon ve imza bilgilerini girin; yazdırdığınız her raporun künyesinde görünür.</div>
+    <div><b class="t">Çalışmanızı kaydedin</b><b>Kaydet</b> tüm girdileri tek bir .json dosyasına yazar,
+      <b>Yükle</b> geri getirir. Dosya sizde kalır.</div>
+    <div><b class="t">PDF raporu</b><b>PDF</b> düğmesi açık hesabı rapor düzeninde yazdırır;
+      Shift ile tıklarsanız tüm modüller tek belgede çıkar.</div>
+  </div>`;
+}
+function anaSayfa(){
+  AKTIF_GRUP=null; AKTIF_MOD='';
+  MOD.forEach(m=>{ const s=$('sec_'+m.id); if(s) s.classList.remove('on'); });
+  const h=$('sec_anasayfa'); if(h) h.classList.add('on');
+  anaCiz(); yanCiz(); yerYaz();
+  drawerKapat();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 /* ---- kenar çubuğu ---- */
 function yanCiz(){
   const el=$('side'); if(!el) return;
-  el.innerHTML = grupList().map(g=>{
+  el.innerHTML = `<button class="sana${AKTIF_MOD?'':' on'}" onclick="anaSayfa()">`+
+    ikonSVG2(ANA_IK)+`<span>Ana sayfa</span></button>` + grupList().map(g=>{
     const ac = g===AKTIF_GRUP;
     let h = `<button class="scat${ac?' on':''}" data-g="${kac(g)}" onclick="gotoGrup('${kac(g)}')">`+
             ikonSVG(g)+`<span>${kac(g)}</span><em>${grupSayi(g)}</em></button>`;
@@ -15167,7 +15443,8 @@ function drawerCiz(){
   if(secili && secili.scrollIntoView) secili.scrollIntoView({block:'nearest',inline:'center'});
 }
 function gotoGrupSadece(g){ AKTIF_GRUP=g; drawerCiz(); }
-function drawerAc(){ drawerCiz(); $('drawer').classList.add('ac'); document.body.style.overflow='hidden'; }
+function drawerAc(){ if(!AKTIF_GRUP) AKTIF_GRUP=grupList()[0];
+  drawerCiz(); $('drawer').classList.add('ac'); document.body.style.overflow='hidden'; }
 function drawerKapat(){ $('drawer').classList.remove('ac'); document.body.style.overflow=''; }
 function sheetAc(){ $('aracpanel').classList.add('ac'); }
 function sheetKapat(){ $('aracpanel').classList.remove('ac'); }
@@ -15175,27 +15452,295 @@ function sheetKapat(){ $('aracpanel').classList.remove('ac'); }
 let AKTIF_MOD='';
 function yerYaz(){
   const m=MOD.find(x=>x.id===AKTIF_MOD); const e=$('yerBilgi');
-  if(e) e.innerHTML = m ? `<i>${kac(m.grup)}</i><s>›</s><b>${kac(m.ad)}</b>` : '';
+  if(e) e.innerHTML = m ? `<i>${kac(m.grup)}</i><s>›</s><b>${kac(m.ad)}</b>` : `<b>Ana sayfa</b>`;
+  const pb=$('btnPdf');
+  if(pb){ pb.disabled=!m;
+    pb.title = m ? 'Açık modülü yazdır / PDF — Shift ile tüm modüller'
+                 : 'Önce bir hesap açın (Shift ile tüm modüller yazdırılabilir)'; }
   yazdirBasYaz(false);
 }
 function yazdirBasYaz(tumu){
   const e=$('yazdirBas'); if(!e) return;
+  const pa=(typeof pjV==='function')?pjV('pj_ad'):'';
+  const pn=(typeof pjV==='function')?pjV('pj_no'):'';
+  const pj = pa ? `<b>${kac(pa)}</b>${pn?' ('+kac(pn)+')':''} · ` : '';
   const m=MOD.find(x=>x.id===AKTIF_MOD);
   const t=new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
   e.innerHTML = tumu
-    ? `<b>Mekanik Tesisat Hesap Aracı</b> — tüm modüller (${MOD.length}) · ${t}`
-    : (m ? `<b>${kac(m.ad)}</b> · ${kac(m.grup)} · Mekanik Tesisat Hesap Aracı · ${t}` : '');
+    ? `${pj}<b>Mekanik Tesisat Hesap Aracı</b> — tüm modüller (${MOD.length}) · ${t}`
+    : (m ? `${pj}<b>${kac(m.ad)}</b> · ${kac(m.grup)} · ${t}` : '');
 }
+/* ================= PROJE SUNUM RAPORU =================
+   Yazdırma anında açık modül, kâğıtta rapor gibi okunacak biçime dönüştürülür:
+   giriş kutuları "Etiket — Değer — Birim" tablosuna, sonuç kutuları sonuç tablosuna
+   döner; kart başlıkları numaralanır; künye ve imza blokları eklenir.
+   Dönüşüm geri alınabilir — ekran görünümü hiç değişmez. */
+function pjV(id){ const e=$(id); return e ? String(e.value||'').trim() : ''; }
+function projeAc(){ const e=$('projepanel'); if(!e) return;
+  if(!pjV('pj_tarih') && $('pj_tarih')) $('pj_tarih').value=new Date().toISOString().slice(0,10);
+  e.classList.add('ac'); document.body.style.overflow='hidden';
+  const f=$('pj_ad'); if(f) setTimeout(()=>f.focus(),60); }
+function projeKapat(){ const e=$('projepanel'); if(!e) return;
+  e.classList.remove('ac'); document.body.style.overflow=''; yazdirBasYaz(false); }
+function trTarih(g){
+  if(!g) return '';
+  const p=g.split('-'); if(p.length!==3) return g;
+  return p[2]+'.'+p[1]+'.'+p[0];
+}
+/* --- künye bloğu --- */
+function raporBasYaz(tumu){
+  const e=$('raporBas'); if(!e) return;
+  const m=MOD.find(x=>x.id===AKTIF_MOD);
+  const ad=pjV('pj_ad'), ack=pjV('pj_aciklama');
+  const bas = ad || 'Mekanik Tesisat Hesap Raporu';
+  const sat=[];
+  const ekle=(a,b,c,d)=>{ if(!b && !d) return;
+    sat.push('<tr><td class="e">'+kac(a)+'</td><td>'+kac(b||'—')+'</td>'+
+      '<td class="e">'+kac(c||'')+'</td><td>'+kac(c?(d||'—'):'')+'</td></tr>'); };
+  ekle('Hesap', tumu ? 'Tüm modüller ('+MOD.length+')' : (m?m.ad:''),
+       'Kategori', tumu ? 'Tüm kategoriler' : (m?m.grup:''));
+  ekle('İşveren', pjV('pj_isveren'), 'Proje no', pjV('pj_no'));
+  ekle('Yapı / blok', pjV('pj_yapi'), 'Revizyon', pjV('pj_rev'));
+  ekle('Müellif', pjV('pj_firma'), 'Tarih',
+       trTarih(pjV('pj_tarih')) || trTarih(new Date().toISOString().slice(0,10)));
+  ekle('Hazırlayan', pjV('pj_hazirlayan'), 'Kontrol eden', pjV('pj_kontrol'));
+  e.innerHTML = '<div class="rbas">'+kac(bas)+'</div>'+
+    (ack?'<div class="rack">'+kac(ack)+'</div>':'')+
+    (sat.length?'<table><tbody>'+sat.join('')+'</tbody></table>':'');
+}
+/* --- imza bloğu --- */
+function raporImza(sec){
+  const e=$('pj_imza');
+  if(!e || !e.checked) return;
+  const d=document.createElement('div');
+  d.className='rprt-imza rprt-uret';
+  const h=(r,n)=>'<td><div class="r">'+r+'</div><div class="n">'+kac(n||'')+'</div>'+
+                 '<div class="i">tarih / imza</div></td>';
+  d.innerHTML='<table><tbody><tr>'+h('Hazırlayan',pjV('pj_hazirlayan'))+
+    h('Kontrol eden',pjV('pj_kontrol'))+h('Onaylayan','')+'</tr></tbody></table>';
+  sec.appendChild(d);
+}
+/* --- rapordan fiyat/maliyet bilgisini çıkarma --- */
+const FIYAT_ET=/fiyat|maliyet|ücret|bedel/i;
+const FIYAT_BIRIM=/^(usd|tl|eur|euro|€|\$|₺|tl\/saat|tl\/€)$/i;
+function fiyatMi(etiket,birim){
+  return FIYAT_ET.test(etiket||'') || FIYAT_BIRIM.test(String(birim||'').trim());
+}
+function raporFiyatGizle(sec){
+  const a=$('pj_fiyat');
+  if(a && !a.checked) return;                     /* kullanıcı göstermeyi seçmiş */
+  sec.querySelectorAll('span.rprt-fiyat').forEach(e=>e.classList.add('rprt-gizle'));
+  sec.querySelectorAll('table').forEach(t=>{
+    const th=t.tHead, tb=t.tBodies[0];
+    /* 1) başlığı fiyat olan sütunlar */
+    if(th && th.rows.length){
+      const g=[];
+      [...th.rows].forEach((tr,r)=>{ g[r]=g[r]||[]; let c=0;
+        [...tr.cells].forEach(h=>{ while(g[r][c]) c++;
+          const rs=h.rowSpan||1, cs=h.colSpan||1;
+          for(let i=0;i<rs;i++){ g[r+i]=g[r+i]||[]; for(let j=0;j<cs;j++) g[r+i][c+j]=h; }
+          c+=cs; }); });
+      const alt=g[g.length-1]||[];
+      const gizli=[];
+      alt.forEach((h,i)=>{ if(h && (h.colSpan||1)===1 && FIYAT_ET.test(h.textContent||'')) gizli.push(i); });
+      if(gizli.length){
+        alt.forEach((h,i)=>{ if(gizli.indexOf(i)>=0 && h) h.classList.add('rprt-gizle'); });
+        [tb, t.tFoot].forEach(grp=>{ if(!grp) return;
+          [...grp.rows].forEach(tr=>{ let c=0;
+            [...tr.cells].forEach(td=>{ const cs=td.colSpan||1;
+              if(cs===1 && gizli.indexOf(c)>=0) td.classList.add('rprt-gizle');
+              c+=cs; }); }); });
+      }
+    }
+    /* 2) "etiket / değer" biçimli iki sütunlu sonuç tablolarında fiyat satırları */
+    if(tb) [...tb.rows].forEach(tr=>{
+      if(tr.cells.length>2) return;
+      const ilk=(tr.cells[0]||{}).textContent||'';
+      if(FIYAT_ET.test(ilk)) tr.classList.add('rprt-gizle');
+    });
+  });
+}
+/* --- bir form kutusunu (etiket + alan) rapor satırına çevirir --- */
+function raporAlan(kutu){
+  const lb=kutu.querySelector(':scope > label');
+  const el=kutu.querySelector(':scope > input,:scope > select,:scope > textarea');
+  if(!lb||!el) return null;
+  const sp=lb.querySelector('span');
+  let birim = sp ? sp.textContent.replace(/^\s*\(|\)\s*$/g,'').trim() : '';
+  let etiket = lb.textContent;
+  if(sp) etiket = etiket.replace(sp.textContent,'');
+  etiket = etiket.trim();
+  /* "m — yoksa 0" gibi uzun açıklamalar birim sütununu şişirir; etikete taşınır */
+  if(birim.length>9){ etiket += ' ('+birim+')'; birim=''; }
+  let deger='';
+  if(el.tagName==='SELECT'){ const o=el.options[el.selectedIndex]; deger=o?o.textContent.trim():''; }
+  else if(el.type==='checkbox'){ deger = el.checked ? 'evet' : 'hayır'; }
+  else deger = String(el.value||'').trim();
+  if(deger==='') deger='—';
+  return {e:etiket, d:deger, b:birim};
+}
+function raporTablo(satirlar, basl){
+  const t=document.createElement('table');
+  t.className='rprt rprt-uret';
+  t.innerHTML=(basl?'<caption>'+kac(basl)+'</caption>':'')+'<tbody>'+satirlar.map(r=>
+    '<tr'+(r.v?' class="vurgu"':'')+'><td class="e">'+kac(r.e)+'</td>'+
+    '<td class="d">'+kac(r.d)+'</td><td class="b">'+kac(r.b||'')+'</td></tr>').join('')+'</tbody>';
+  return t;
+}
+/* gövdeyi tek hücreli tabloya alır; thead her sayfada yinelenir */
+function raporSayfaKur(){
+  if($('rprtSayfa')) return;
+  const shell=$('shell'), bas=$('raporBas');
+  if(!shell||!shell.parentNode) return;
+  const t=document.createElement('table');
+  t.id='rprtSayfa'; t.className='rprt-uret';
+  t.innerHTML='<thead><tr><td><div id="rprtUst"></div></td></tr></thead>'+
+              '<tbody><tr><td id="rprtGovde"></td></tr></tbody>';
+  shell.parentNode.insertBefore(t, bas||shell);
+  const gov=t.querySelector('#rprtGovde');
+  if(bas) gov.appendChild(bas);
+  gov.appendChild(shell);
+  t.querySelector('#rprtUst').innerHTML = $('yazdirBas') ? $('yazdirBas').innerHTML : '';
+}
+function raporSayfaSil(){
+  const t=$('rprtSayfa'); if(!t) return;
+  const shell=$('shell'), bas=$('raporBas');
+  if(bas) t.parentNode.insertBefore(bas,t);
+  if(shell) t.parentNode.insertBefore(shell,t);
+  t.remove();
+}
+/* Yazılabilir genişlik: A4 dikey ≈ 690 px, yatay ≈ 1040 px (13 mm kenar boşluğu) */
+let RAPOR_OTO_YATAY=false;
+function raporYatay(){ const v=pjV('pj_yon')||'oto';
+  return v==='yatay' || (v!=='dikey' && RAPOR_OTO_YATAY); }
+function raporYon(){
+  let st=$('rprtYonStil');
+  if(!st){ st=document.createElement('style'); st.id='rprtYonStil'; document.head.appendChild(st); }
+  st.textContent='@media print{@page{size:A4 '+(raporYatay()?'landscape':'portrait')+';margin:14mm 13mm}}';
+}
+function RAPOR_GENislik(){ return raporYatay()?1040:690; }
+/* Tablonun gerçekten tercih ettiği genişlik — kap genişliğine göre esnetilmiş
+   hâli değil. Yazdırmada giriş kutuları düz metne döndüğü için bu ölçü güvenli
+   tarafta kalır. */
+function raporTabloGen(t){
+  const eski=t.style.width;
+  t.style.width='max-content';
+  const gen=Math.max(t.getBoundingClientRect().width||0, 1);
+  t.style.width=eski;
+  if(t.getAttribute('style')==='') t.removeAttribute('style');
+  return gen;
+}
+function raporEnGenis(kapsam){
+  let mx=0;
+  kapsam.forEach(sec=>{ if(!sec) return;
+    sec.querySelectorAll('.wrap>table,.tblwrap>table,.svgwrap>table').forEach(t=>{
+      mx=Math.max(mx, raporTabloGen(t)); }); });
+  return mx;
+}
+function raporKucult(sec){
+  const G=RAPOR_GENislik();
+  sec.querySelectorAll('.wrap,.tblwrap,.svgwrap').forEach(w=>{
+    const t=w.querySelector('table'); if(!t) return;
+    const gen=raporTabloGen(t);
+    if(gen<=G+8) return;
+    const z=Math.max(0.34, Math.min(1, G/(gen*1.02)));
+    w.style.setProperty('--zk', z.toFixed(3));
+    w.classList.add('rprt-kucult');
+  });
+}
+function raporKur(tumu){
+  raporSil();
+  yazdirBasYaz(tumu); raporBasYaz(tumu);
+  const kapsam = tumu ? Array.from(document.querySelectorAll('#main > section'))
+                      : [document.querySelector('#main > section.on')];
+  /* Otomatik kâğıt yönü: dikeyde %60'ın altına küçülmesi gereken bir tablo varsa
+     rapor yatay basılır — böylece geniş tablolar okunur kalır. */
+  RAPOR_OTO_YATAY = (690/(raporEnGenis(kapsam)*1.02)) < 0.6;
+  raporYon();
+  const fa=$('pj_fiyat'), fiyatGizli = !fa || fa.checked;
+  kapsam.forEach(sec=>{
+    if(!sec) return;
+    /* 1) giriş ızgaraları → tablo */
+    sec.querySelectorAll('.grid').forEach(g=>{
+      const sat=[];
+      Array.from(g.children).forEach(k=>{ const r=raporAlan(k);
+        if(r && !(fiyatGizli && fiyatMi(r.e,r.b))) sat.push(r); });
+      if(!sat.length) return;
+      g.classList.add('rprt-gizle');
+      g.insertAdjacentElement('afterend', raporTablo(sat,'Girilen değerler'));
+    });
+    /* 2) sonuç kutuları → tablo */
+    sec.querySelectorAll('.res > .out').forEach(o=>{
+      const sat=[];
+      o.querySelectorAll(':scope > .o').forEach(t=>{
+        const k=t.querySelector('.k'), v=t.querySelector('.v');
+        if(!k||!v) return;
+        const u=v.querySelector('.u');
+        let deger=v.textContent; if(u) deger=deger.replace(u.textContent,'');
+        const et=k.textContent.trim(), bi=u?u.textContent.trim():'';
+        if(fiyatGizli && fiyatMi(et,bi)) return;
+        sat.push({e:et, d:deger.trim()||'—', b:bi, v:t.classList.contains('hi')});
+      });
+      if(!sat.length) return;
+      o.classList.add('rprt-gizle');
+      o.insertAdjacentElement('afterend', raporTablo(sat,'Hesap sonuçları'));
+    });
+    /* 3) tablo hücrelerindeki alanlar düz metne döner — kutu genişlikleri
+       kâğıtta gereksiz yer kaplamasın diye */
+    sec.querySelectorAll('table input,table select,table textarea').forEach(el=>{
+      if(el.type==='file'||el.type==='hidden') return;
+      const sp=document.createElement('span');
+      sp.className='rprt-uret rprt-deger';
+      sp.textContent = el.tagName==='SELECT'
+        ? ((el.options[el.selectedIndex]||{}).textContent||'').trim()
+        : (el.type==='checkbox' ? (el.checked?'✓':'—')
+           : (String(el.value||'').trim()||'—'));
+      el.classList.add('rprt-gizle');
+      el.insertAdjacentElement('afterend', sp);
+    });
+    /* 4) bölüm numaralandırma */
+    let n=0;
+    sec.querySelectorAll('.card > h3, .celikx .panel > h2').forEach(h=>{
+      h.setAttribute('data-no', ++n);
+    });
+    /* 5) fiyat / maliyet bilgisini rapordan çıkar */
+    raporFiyatGizle(sec);
+    /* 6) geniş tabloları kâğıda sığdır */
+    raporKucult(sec);
+    /* 7) imza bloğu */
+    if(!tumu) raporImza(sec);
+  });
+  raporSayfaKur();
+}
+function raporSil(){
+  raporSayfaSil();
+  document.querySelectorAll('.rprt-uret').forEach(e=>e.remove());
+  document.querySelectorAll('.rprt-gizle').forEach(e=>e.classList.remove('rprt-gizle'));
+  document.querySelectorAll('.rprt-kucult').forEach(e=>{
+    e.classList.remove('rprt-kucult'); e.style.removeProperty('--zk');
+    if(e.getAttribute('style')==='') e.removeAttribute('style'); });
+  document.querySelectorAll('[data-no]').forEach(e=>{
+    if(e.tagName==='H3'||e.tagName==='H2') e.removeAttribute('data-no'); });
+}
+
 /* Yazdır: varsayılan olarak yalnız açık modül; Shift basılıysa tüm modüller */
 function yazdir(ev){
   const tumu = !!(ev && ev.shiftKey);
+  if(!tumu && !AKTIF_MOD) return;      /* ana sayfada yazdırılacak hesap yok */
   document.body.classList.toggle('yazdir-tumu', tumu);
   yazdirBasYaz(tumu);
   if(tumu) tabloHizalaHepsi();
+  raporBasYaz(tumu);
+  raporKur(tumu);
   window.print();
 }
 window.addEventListener('afterprint',()=>{
-  document.body.classList.remove('yazdir-tumu'); yazdirBasYaz(false);
+  document.body.classList.remove('yazdir-tumu'); yazdirBasYaz(false); raporSil();
+});
+/* tarayıcı kısayolundan (Ctrl+P) yazdırıldığında da rapor düzeni kurulsun */
+window.addEventListener('beforeprint',()=>{
+  const tumu=document.body.classList.contains('yazdir-tumu');
+  if(!document.querySelector('.rprt-uret')){ raporBasYaz(tumu); raporKur(tumu); }
 });
 function gotoGrup(g, hedef){
   AKTIF_GRUP = g;
@@ -15205,6 +15750,7 @@ function gotoGrup(g, hedef){
 function goto(id){
   const m0 = MOD.find(m=>m.id===id); if(!m0) return;
   AKTIF_GRUP = m0.grup; AKTIF_MOD = id;
+  const ana=$('sec_anasayfa'); if(ana) ana.classList.remove('on');
   MOD.forEach(m=>{ const s=$('sec_'+m.id); if(s) s.classList.toggle('on', m.id===id); });
   yanCiz(); yerYaz();
   const n=$('nav_'+id);
@@ -15213,8 +15759,9 @@ function goto(id){
   calcAll();   /* modül görünür olunca kanvaslar doğru genişlikte yeniden çizilsin */
 }
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){ drawerKapat(); sheetKapat(); }
+  if(e.key==='Escape'){ drawerKapat(); sheetKapat(); projeKapat(); }
 });
+document.addEventListener('click',e=>{ if(e.target && e.target.id==='projepanel') projeKapat(); });
 (function init(){
   /* şema kartları ve çizim çağrıları — modül tanımlarına dokunmadan eklenir */
   const CZ_KART={kazan:'kazan',denge:'denge',boyler:'boyler',hidrofor:'hidrofor',sihhi:'sihhi',
@@ -15249,7 +15796,8 @@ document.addEventListener('keydown',e=>{
     if(fn && CZ[fn]){ const eski=m.calc;
       m.calc=function(){ eski.call(this); try{ CZ[fn](); }catch(e){ console.warn(fn,e); } }; }
   });
-  $('main').innerHTML = MOD.map(m=>`<section id="sec_${m.id}"><h2>${m.baslik}</h2>
+  $('main').innerHTML = `<section id="sec_anasayfa" class="on"></section>` +
+    MOD.map(m=>`<section id="sec_${m.id}"><h2>${m.baslik}</h2>
      <p class="lead">${m.lead}</p>${m.html}</section>`).join('');
   const KAPALI_BASLAT=["Yönetmelik","Manuel Hesaplama","Katsayıları","Tavsiye Hava","Kataloğu",
     "Gövde Ölçüleri","Tipi Tablosu","Filtresi Tablosu","Santral Tablosu","Açınım Tablosu",
@@ -15290,8 +15838,14 @@ document.addEventListener('keydown',e=>{
     if(t && (t.tagName==='INPUT'||t.tagName==='SELECT'||t.tagName==='TEXTAREA')) calcAllGec();
   }));
   binaTipiDegisti();
-  gotoGrup(MOD[0].grup);
-  calcAll();
+  const ab=$('altBilgi');
+  if(ab) ab.textContent = MOD.length+' modül · '+grupList().length+' kategori';
+  if($('pj_tarih') && !$('pj_tarih').value) $('pj_tarih').value=new Date().toISOString().slice(0,10);
+  raporYon();
+  ['pj_ad','pj_no','pj_isveren','pj_yapi','pj_firma','pj_hazirlayan','pj_kontrol','pj_rev','pj_tarih','pj_aciklama']
+    .forEach(id=>{ const e=$(id); if(e) e.addEventListener('input',()=>yazdirBasYaz(false)); });
+  calcAll();          /* tüm modüller bir kez hesaplansın (şemalar hazır olsun) */
+  anaSayfa();
 })();
 
 /* ---- Kaydet / Yükle ---- */
