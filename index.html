@@ -134,6 +134,11 @@ section.on{display:block}
 h2{font-size:19px;margin:0 0 2px;font-weight:640;letter-spacing:-.025em}
 .lead{color:var(--muted);font-size:12.5px;margin:0 0 13px;max-width:80ch}
 
+/* yazdırma başlığı — yalnız çıktıda görünür */
+#yazdirBas{display:none;padding:0 0 10px;margin-bottom:12px;border-bottom:1px solid #ccc;
+  font-size:11px;color:#444;display:none}
+#yazdirBas b{font-size:13px;color:#000}
+
 /* ---------------- mobil kabuk ---------------- */
 #mobilbar,#drawer,#aracpanel{display:none}
 #mobilbar{position:fixed;left:0;right:0;bottom:0;z-index:45;
@@ -255,6 +260,11 @@ input[readonly]{background:var(--res);color:var(--muted)}
 table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
 th,td{padding:4px 7px;border-bottom:1px solid var(--line);text-align:right}
 th:first-child,td:first-child{text-align:left}
+/* sütun hizalaması: başlık ile gövde hücreleri daima aynı yönde durur.
+   data-h değerini tabloHizala() atar (l=sola, r=sağa, c=ortalanmış grup başlığı). */
+th[data-h="l"],td[data-h="l"]{text-align:left!important}
+th[data-h="r"],td[data-h="r"]{text-align:right!important}
+th[data-h="c"]{text-align:center!important}
 th{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;
   white-space:nowrap;line-height:1.25;padding-top:2px;padding-bottom:5px}
 tbody tr{transition:background .14s}
@@ -420,9 +430,21 @@ section.on > h2::after{content:"";display:block;height:1px;width:180px;margin:9p
   #shell{display:block}
   main{max-width:none;padding:0}
   body::before,body::after{display:none}
-  section{display:block!important;page-break-after:always}
+  /* yalnız açık modül yazdırılır — kural yalnız modül bölümlerine uygulanır,
+     çelik modüllerindeki iç içe <section> panelleri etkilenmez */
+  #main > section{display:none!important}
+  #main > section.on{display:block!important;page-break-after:auto}
+  body.yazdir-tumu #main > section{display:block!important;page-break-after:always}
+  body.yazdir-tumu #main > section:last-of-type{page-break-after:auto}
   section.on > h2,section.on > .lead,section.on .card{animation:none!important}
   section.on > h2::after{display:none}
+  /* Kâğıt israfını önlemek için uzun kartların bölünmesine izin verilir;
+     bölünmemesi gerekenler: çizimler, sonuç kutuları, tablo satırları. */
+  .czbox,.cz,.o,.res .out{page-break-inside:avoid;break-inside:avoid}
+  .celikx .tool2{display:block}
+  h2,h3{break-after:avoid;page-break-after:avoid}
+  tr,.o{break-inside:avoid;page-break-inside:avoid}
+  #yazdirBas{display:block!important}
   body{background:#fff}
   .card,.res{box-shadow:none;border-color:#ccc}
   .card::before,.o.hi::after{display:none}
@@ -430,6 +452,13 @@ section.on > h2::after{content:"";display:block;height:1px;width:180px;margin:9p
   .card h3::before{display:none}
   .note:not(.w){white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
   .note:not(.w) br{display:block!important}
+  /* çıktıda biraz daha sıkı yerleşim — gereksiz sayfa taşmasını azaltır */
+  body{font-size:12.5px}
+  .card{margin-bottom:8px;padding:10px 12px}
+  .celikx section.panel{margin-bottom:8px}
+  ul.notes,.notes,.note{break-before:avoid;page-break-before:avoid}
+  h2{font-size:17px;margin-bottom:1px}
+  .lead{margin-bottom:9px}
 }
 
 /* ---------------- teknik çizimler ---------------- */
@@ -501,12 +530,13 @@ section.on > h2::after{content:"";display:block;height:1px;width:180px;margin:9p
     <button class="tool" onclick="document.getElementById('fileIn').click()" title="Kayıtlı .json dosyasını yükle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Yükle</button>
     <button class="tool" id="btnNot" onclick="notlarToggle()" title="Modül notları"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-3-6 3z"/><path d="M9 8h6M9 12h4"/></svg>Notlar</button>
     <button class="tool" onclick="kartlarToggle()" title="Tüm kartları aç / kapat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/></svg>Kartlar</button>
-    <button class="tool" onclick="window.print()" title="Yazdır veya PDF olarak kaydet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 16h10v5H7z"/></svg>PDF</button>
+    <button class="tool" onclick="yazdir(event)" title="Açık modülü yazdır / PDF — Shift ile tüm modüller"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 16h10v5H7z"/></svg>PDF</button>
     <input type="file" id="fileIn" accept=".json" style="display:none" onchange="loadJSON(this)">
   </div>
 </header>
 <div id="loadbeam"></div></div>
 
+<div id="yazdirBas"></div>
 <div id="shell">
   <aside id="side"></aside>
   <main id="main"></main>
@@ -539,7 +569,7 @@ section.on > h2::after{content:"";display:block;height:1px;width:180px;margin:9p
       <button onclick="sheetKapat();saveJSON()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h10l4 4v12H5z"/><path d="M9 4v5h6"/><rect x="8" y="13" width="8" height="6" rx="1"/></svg>Kaydet (.json)</button>
       <button onclick="sheetKapat();document.getElementById('fileIn').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Yükle</button>
       <button onclick="sheetKapat();notlarToggle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-3-6 3z"/><path d="M9 8h6M9 12h4"/></svg>Notlar</button>
-      <button onclick="sheetKapat();window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 16h10v5H7z"/></svg>Yazdır / PDF</button>
+      <button onclick="sheetKapat();yazdir()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 16h10v5H7z"/></svg>Yazdır / PDF</button>
     </div>
   </div>
 </div>
@@ -2826,6 +2856,14 @@ function fanSec(tip, debi, basinc){
 const OP_DUMAN_ACH = 10;      // BYKHY: yangın anı duman tahliyesi
 const OP_ACIKLIK_HIZ = 2;     // giriş açıklığı hava hızı (ASHRAE/CIBSE 1,5–2,5 m/s)
 const OP_TAZE_ORAN = 0.70;    // yangın anı taze hava oranı (EN 12101-6 / NFPA 92 pratiği)
+const OP_SAFT = ['Ş1','Ş2','Ş3','Ş4','Ş5','Ş6','Ş7','Ş8'];
+const OP_V_DUMAN = 10;        // duman tahliye şaftı tasarım hızı üst sınırı (m/s)
+const OP_V_TAZE  = 8;         // taze hava şaftı tasarım hızı üst sınırı (m/s)
+/* kat satırındaki şaft seçimi — aynı şaftı seçen katlar ortak hesaplanır */
+function opSaftSel(id){
+  return `<td><select id="${id}" onchange="calcAll()" style="min-width:56px">`+
+    OP_SAFT.map(x=>`<option value="${x}">${x}</option>`).join('')+`</select></td>`;
+}
 /* [ad, kol, hız, serbest alan, ölçü1, sürtünme kaybı hesaplanır mı] */
 const OP_ELEMAN = [
  ["Taze hava damperi","th",5,1,2000,false],
@@ -2904,6 +2942,7 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
       <td><input id="ot_yuk${i}" type="number" step="any" value="${r[2]}" oninput="calcAll()"></td>
       <td><input id="ot_ae${i}" type="number" step="any" value="0" oninput="calcAll()"></td>
       <td><input id="ot_ay${i}" type="number" step="any" value="0" oninput="calcAll()"></td>
+      ${opSaftSel('ot_ts'+i)}${opSaftSel('ot_ds'+i)}
       <td id="ot_hac${i}">—</td><td id="ot_aq${i}">—</td>
       <td id="ot_gun${i}">—</td><td id="ot_nf${i}">—</td>
       <td id="ot_dum${i}">—</td><td id="ot_yf${i}">—</td>
@@ -2921,11 +2960,13 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
 
    <div class="card"><h3>Katlar</h3><div class="wrap"><table>
     <thead><tr><th rowspan="2">Kat</th><th rowspan="2">Alan<br>m²</th><th rowspan="2">Yük.<br>m</th>
-    <th colspan="2">Giriş açıklığı</th><th rowspan="2">Hacim<br>m³</th><th rowspan="2">Açıklık<br>debisi m³/h</th>
+    <th colspan="2">Giriş açıklığı</th><th colspan="2">Bağlı şaft</th>
+    <th rowspan="2">Hacim<br>m³</th><th rowspan="2">Açıklık<br>debisi m³/h</th>
     <th colspan="2">Normal zaman m³/h</th><th colspan="2">Yangın anı m³/h</th><th rowspan="2"></th></tr>
-    <tr><th>havalandırma</th><th>taze — fandan</th><th>duman</th><th>taze — fandan</th></tr></thead>
+    <tr><th>en m</th><th>yük. m</th><th>taze hava</th><th>duman</th>
+    <th>havalandırma</th><th>taze — fandan</th><th>duman</th><th>taze — fandan</th></tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td>TOPLAM</td><td id="op_talan">—</td><td colspan="3"></td><td id="op_hacim">—</td>
+    <tfoot><tr><td>TOPLAM</td><td id="op_talan">—</td><td colspan="5"></td><td id="op_hacim">—</td>
     <td id="op_gdebi">—</td><td id="op_gundebi">—</td><td id="op_gunlukbel">—</td>
     <td id="op_tdum">—</td><td></td><td></td></tr></tfoot></table></div>
    <div id="op_zonuyari"></div>
@@ -2933,6 +2974,25 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
    <b>2 m/s</b> sabittir (ASHRAE / CIBSE tavsiyesi 1,5–2,5 m/s).
    <b>"Taze — fandan"</b> sütunları, o katın %70 taze hava payından kendi açıklığı düşüldükten sonra
    fandan istenen debidir: normal zamanda bunların <b>toplamı</b>, yangın anında <b>en büyüğü</b> geçerlidir.</div></div>
+
+   <div class="card"><h3>Şaft Özeti — Ortak Kullanım</h3><div class="wrap"><table id="op_safttbl">
+    <thead><tr><th>Şaft</th><th>Bağlı katlar</th><th>Yangın anı<br>m³/h</th><th>Normal zaman<br>m³/h</th>
+    <th>Tasarım<br>m³/h</th><th>Belirleyen</th><th>Min. kesit<br>m²</th><th>Fan<br>ad.</th>
+    <th>Fan başına<br>m³/h</th><th>Seçilen fan</th><th>Fiyat<br>USD</th></tr></thead>
+    <tbody id="op_saftgov"></tbody></table></div>
+   <div id="op_saftozet"></div>
+   <div class="note"><b>Mantık:</b> her kat için <b>taze hava</b> ve <b>duman</b> şaftı ayrı ayrı seçilir;
+   aynı şaftı seçen katlar tek bir sistem olarak hesaplanır — şaftları farklı olan katlar birbirini etkilemez.<br>
+   <b>Duman şaftı:</b> yangın anında yalnızca yanan katın damperi açılır, bu yüzden şaftın yangın debisi
+   kendisine bağlı katların <b>en büyüğü</b>dür; normal işletmede bağlı katların hepsi birlikte havalandırılır,
+   bu yüzden normal debisi bağlı katların <b>toplamı</b>dır. Tasarım debisi bu ikisinin büyüğüdür.<br>
+   <b>Taze hava şaftı:</b> aynı mantık, katların "taze — fandan" değerleriyle — yangında en büyüğü,
+   normal işletmede toplamı.<br>
+   <b>Min. kesit:</b> duman şaftı <b>10 m/s</b>, taze hava şaftı <b>8 m/s</b> üst hız sınırıyla
+   (kesit = debi ⁄ 3600 ⁄ hız). Mimari şaft boşluğu bu değerin altına düşmemelidir.<br>
+   <b>Fan seçimi</b> aşağıdaki kesit tablosundan gelen karşı basınçla yapılır; o tablo <b>en büyük (kritik)
+   şaftın</b> debisiyle çalışır. Şaft güzergâhları belirgin biçimde farklıysa her şaft için
+   alttaki <b>Manuel Hesaplama</b> kartıyla kesitleri ayrıca kontrol edin.</div></div>
 
    <div class="row2">
     <div class="card"><h3>Yangın Anı — Kritik Kat (10 ACH)</h3><div class="res"><div class="out">
@@ -2951,13 +3011,15 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
    </div>
 
    <div class="card"><h3>Nihai Fan Debileri</h3><div class="res"><div class="out">
-     ${O('op_duman','1) Duman tahliye fanı','m³/h',1)}
+     ${O('op_duman','1) Duman tahliyesi — kritik şaft','m³/h',1)}
      ${O('op_belirleyen','Belirleyen kriter','')}
+     ${O('op_dumantop','Duman tahliyesi — tüm şaftlar','m³/h')}
      ${O('op_yuzde70','2) Taze hava ihtiyacı (%70)','m³/h')}
      ${O('op_gtoplam','Giriş açıklıkları','m³/h')}
      ${O('op_acikdus','Açıklıkla karşılanan','m³/h')}
-     ${O('op_taze','3) Taze hava fanı','m³/h',1)}
+     ${O('op_taze','3) Taze hava — kritik şaft','m³/h',1)}
      ${O('op_tazebel','Taze havayı belirleyen','')}
+     ${O('op_tazetop','Taze hava — tüm şaftlar','m³/h')}
    </div></div>
    <div id="op_tazenot"></div>
    <div class="note">Taze hava fanı kat kat, iki senaryonun büyüğüne göre bulunur:
@@ -2969,15 +3031,15 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
 
    <div class="row2">
     <div class="card"><h3>Fan Seçimi</h3><div class="grid">
-      ${F('op_thfan','Taze hava fan adedi','2','adet')}
-      ${F('op_dtfan','Duman tahliye fan adedi','2','adet')}
+      ${F('op_thfan','Taze hava fan adedi (şaft başına)','2','adet')}
+      ${F('op_dtfan','Duman tahliye fan adedi (şaft başına)','2','adet')}
       ${F('op_emniyet','Emniyet payı — opsiyonel','10','%')}
     </div><div class="res" style="margin-top:12px"><div class="out">
-      ${O('op_thdebi','Taze hava fanı (adet başına)','m³/h',1)}
+      ${O('op_thdebi','Taze hava fanı (kritik şaft, adet başına)','m³/h',1)}
       ${O('op_thbas','Taze hava karşı basıncı','Pa',1)}
       ${O('op_thsec','Seçilen basınçlandırma fanı','',1)}
       ${O('op_thfiyat','Liste fiyatı','USD')}
-      ${O('op_dtdebi','Duman tahliye fanı (adet başına)','m³/h',1)}
+      ${O('op_dtdebi','Duman tahliye fanı (kritik şaft, adet başına)','m³/h',1)}
       ${O('op_dtbas','Duman tahliye karşı basıncı','Pa',1)}
       ${O('op_dtsec','Seçilen duman tahliye fanı','',1)}
       ${O('op_dtfiyat','Liste fiyatı','USD')}
@@ -3057,7 +3119,8 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
      put('ot_nf'+i, alan>0? fmt(nf,0) : "—");
      put('ot_dum'+i, hac>0? fmt(dum,0) : "—");
      put('ot_yf'+i, hac>0? fmt(yf,0) : "—");
-     kat.push({i,ad,alan,hac,dum,aq,gun,nf,yf});
+     const ts=S('ot_ts'+i)||OP_SAFT[0], ds=S('ot_ds'+i)||OP_SAFT[0];
+     kat.push({i,ad,alan,hac,dum,aq,gun,nf,yf,ts,ds});
      talan+=alan; thacim+=hac; tgun+=gun; tdum+=dum; taq+=aq; tnf+=nf;
      if(aq>0) gkat++;
      if(dum>kritik){ kritik=dum; kritikAd=ad; }
@@ -3075,24 +3138,55 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
    put('op_normihtiyac',tgun,0);
    put('op_kritik',kritikAd); put('op_kritikdebi',kritik,0);
    put('op_yangintaze',kritik*OP_TAZE_ORAN,0);
-   const yanginBelirler = kritik>=tgun;
-   const belirleyici=Math.max(kritik,tgun);
+   /* ---- şaft grupları: aynı şaftı seçen katlar ortak hesaplanır ----
+      yangın anı: tek katta yangın kabulü → şaftın bağlı katlarının EN BÜYÜĞÜ
+      normal zaman: tüm katlar birlikte çalışır → bağlı katların TOPLAMI */
+   const saftTopla=(anahtar,yanginAlan,normalAlan)=>{
+     const m={};
+     kat.forEach(k=>{
+       if(k.alan<=0 && k.hac<=0) return;
+       const ad=k[anahtar]||OP_SAFT[0];
+       const g=m[ad]||(m[ad]={ad:ad,katlar:[],yangin:0,yanginKat:"—",normal:0});
+       g.katlar.push(k.ad);
+       const yv=k[yanginAlan];
+       if(yv>g.yangin){ g.yangin=yv; g.yanginKat=k.ad; }
+       g.normal+=k[normalAlan];
+     });
+     return OP_SAFT.filter(x=>m[x]).map(x=>{
+       const g=m[x]; g.tasarim=Math.max(g.yangin,g.normal);
+       g.belirleyen = g.tasarim<=0 ? "—" : (g.yangin>=g.normal ? "Yangın anı — "+g.yanginKat : "Normal zaman");
+       return g;
+     });
+   };
+   const dSaft=saftTopla('ds','dum','gun');
+   const tSaft=saftTopla('ts','yf','nf');
+   const enBuyuk=a=>a.reduce((p,c)=>c.tasarim>p.tasarim?c:p, {tasarim:-1,belirleyen:"—",ad:"—",yanginKat:"—",yangin:0,normal:0});
+   const kritikD=dSaft.length?enBuyuk(dSaft):{tasarim:0,belirleyen:"—",ad:"—",yanginKat:"—",yangin:0,normal:0};
+   const kritikT=tSaft.length?enBuyuk(tSaft):{tasarim:0,belirleyen:"—",ad:"—",yanginKat:"—",yangin:0,normal:0};
+   const dToplam=dSaft.reduce((a,b)=>a+b.tasarim,0), tToplam=tSaft.reduce((a,b)=>a+b.tasarim,0);
+   const tekD=dSaft.length<=1, tekT=tSaft.length<=1;
+
+   const belirleyici=Math.max(kritikD.tasarim,0);
    put('op_duman',belirleyici,0);
-   put('op_belirleyen', yanginBelirler ? "Yangın anı (kritik kat)" : "Normal zaman (tüm katlar)");
+   put('op_belirleyen', belirleyici<=0 ? "—"
+     : (kritikD.yangin>=kritikD.normal ? "Yangın anı (kritik kat)" : "Normal zaman (tüm katlar)")
+       + (tekD?"":" · "+kritikD.ad));
+   put('op_dumantop',dToplam,0);
    const yuzde70 = belirleyici*OP_TAZE_ORAN;
    put('op_yuzde70',yuzde70,0);
-   /* A: yangın her katta çıkabilir → katların en kötüsü · B: normal işletmede tüm katlar birlikte */
-   const A = yanginFan, B = tnf;
-   const taze = Math.max(A,B);
+   const A = kritikT.yangin, B = kritikT.normal;
+   const taze = Math.max(kritikT.tasarim,0);
    put('op_taze',taze,0);
+   put('op_tazetop',tToplam,0);
    put('op_acikdus', taq>0 ? fmt(yuzde70-taze,0) : "açıklık yok");
    put('op_tazebel', taze<=0 ? "gerekli değil"
-     : (A>=B ? "Yangın anı — "+yanginKat : "Normal zaman (tüm katlar)"));
+     : (A>=B ? "Yangın anı — "+kritikT.yanginKat : "Normal zaman (tüm katlar)")
+       + (tekT?"":" · "+kritikT.ad));
    let tnot='';
    if(taze<=0 && taq>0) tnot='<div class="note w" style="margin-top:9px">Tüm katlarda giriş açıklıkları'
      +' taze hava ihtiyacını karşılıyor — taze hava fanı gerekli değil.</div>';
    else if(taq>0) tnot='<div class="note" style="margin-top:9px">Yangın senaryosu '
-     +(A>=B?'belirleyici':'belirleyici değil')+': açıklığı yetersiz en kötü kat <b>'+yanginKat+'</b> ('
+     +(A>=B?'belirleyici':'belirleyici değil')+': açıklığı yetersiz en kötü kat <b>'+kritikT.yanginKat+'</b> ('
      +fmt(A,0)+' m³/h) · normal işletmede tüm katların fandan ihtiyacı toplamı '+fmt(B,0)+' m³/h.</div>';
    $('op_tazenot').innerHTML = tnot;
    put('op_konut',talan*6,0); put('op_ticari',talan*12,0);
@@ -3116,7 +3210,45 @@ MOD.push({grup:"Yangın & Fan", id:"otopark", ad:"Otopark Duman Tahliyesi", basl
    put('op_dtfiyat', dtDebi>0 && s2.fiyat!==undefined? fmt(s2.fiyat,0) : "—");
    const [mThPa,mDtPa]=opKesitHesap('opm', V('opm_th'), V('opm_dt'));
    put('opm_thpa',mThPa,1); put('opm_dtpa',mDtPa,1);
- 
+
+   /* ---- şaft özeti tablosu ---- */
+   const saftSatir=(g,tip)=>{
+     const n = tip==='d' ? nDT : nTH;
+     const v = tip==='d' ? OP_V_DUMAN : OP_V_TAZE;
+     const bas = tip==='d' ? dtBas : thBas;
+     const perFan = g.tasarim>0 ? up((g.tasarim/n)/1000)*1000 : 0;
+     const sec = perFan>0 ? fanSec(tip==='d'?'DTF':'BF', perFan, bas) : null;
+     const kesit = g.tasarim>0 ? g.tasarim/3600/v : 0;
+     const fiyat = sec && sec.fiyat!==undefined ? sec.fiyat*n : undefined;
+     return {h:`<tr><td><b>${kac(g.ad)}</b></td><td>${kac(g.katlar.join(', '))}</td>`+
+       `<td>${fmt(g.yangin,0)}</td><td>${fmt(g.normal,0)}</td><td><b>${fmt(g.tasarim,0)}</b></td>`+
+       `<td>${kac(g.belirleyen)}</td><td>${fmt(kesit,2)}</td><td>${fmt(n,0)}</td>`+
+       `<td>${perFan>0?fmt(perFan,0):'—'}</td><td>${sec?kac(sec.ad):'gerekli değil'}</td>`+
+       `<td>${fiyat!==undefined?fmt(fiyat,0):'—'}</td></tr>`, fiyat:fiyat||0};
+   };
+   let sh='', sfiyat=0;
+   if(dSaft.length){
+     sh+='<tr><td colspan="11"><b>DUMAN TAHLİYE ŞAFTLARI</b></td></tr>';
+     dSaft.forEach(g=>{ const r=saftSatir(g,'d'); sh+=r.h; sfiyat+=r.fiyat; });
+   }
+   if(tSaft.length){
+     sh+='<tr><td colspan="11"><b>TAZE HAVA ŞAFTLARI</b></td></tr>';
+     tSaft.forEach(g=>{ const r=saftSatir(g,'t'); sh+=r.h; sfiyat+=r.fiyat; });
+   }
+   if(!sh) sh='<tr><td colspan="11">Kat verisi girilmedi.</td></tr>';
+   $('op_saftgov').innerHTML=sh;
+   const cokSaft = dSaft.length>1 || tSaft.length>1;
+   $('op_saftozet').innerHTML = !dSaft.length ? '' :
+     '<div class="note'+(cokSaft?'':' w')+'" style="margin-top:10px">'+
+     (cokSaft
+       ? '<b>'+dSaft.length+' duman</b> + <b>'+tSaft.length+' taze hava</b> şaftı tanımlı. '+
+         'Toplam kurulu kapasite: duman <b>'+fmt(dToplam,0)+' m³/h</b>, taze hava <b>'+fmt(tToplam,0)+' m³/h</b>'+
+         ' · toplam fan liste fiyatı <b>'+fmt(sfiyat,0)+' USD</b>. '+
+         'Şaftlar ayrıldığı için toplam kapasite tek şaftlı çözümden büyüktür: her şaft kendi en kötü '+
+         'senaryosuna göre ayrı ayrı boyutlanır.'
+       : 'Tüm katlar ortak şaft kullanıyor. Katlara farklı şaft atarsanız (ör. 1. ve 3. bodrum Ş1, '+
+         '2. bodrum Ş2) her şaft kendi katlarına göre ayrı hesaplanır.')+'</div>';
+
    CZ.cizOtopark();
   }});
 
@@ -6254,7 +6386,7 @@ const CELIKX_CSS=`<style>
 .celikx .panel{background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:12px;}
 .celikx .panel h2{font-size:13px; font-weight:700; margin-bottom:8px; padding-bottom:5px; border-bottom:1px solid var(--line);}
 .celikx table{border-collapse:collapse; width:100%; font-size:12.5px;}
-.celikx th{font-weight:600; text-align:left; color:var(--muted); padding:3px 5px; border-bottom:1px solid var(--line); white-space:nowrap; font-size:11.5px;}
+.celikx th{font-weight:600; color:var(--muted); padding:3px 5px; border-bottom:1px solid var(--line); white-space:nowrap; font-size:11.5px;}
 .celikx td{padding:2px 3px; border-bottom:1px solid var(--line);}
 .celikx td input, .celikx td select{width:100%; padding:3px 4px; border:1px solid var(--line); border-radius:3px; font-size:12.5px; font-family:inherit; background:var(--panel-2); color:var(--ink);}
 .celikx td input:focus, .celikx td select:focus{outline:2px solid var(--accent); outline-offset:-1px;}
@@ -7406,8 +7538,9 @@ const CELIK2_CSS=`<style>
  .celik table.mtbl td:nth-child(2){color:var(--ink);font-weight:600}
  .celik table.mtbl td:last-child{font-weight:500}
  .celik table.mtbl th{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
-   color:var(--muted);font-weight:600;text-align:left;padding-bottom:5px}
- .celik table.mtbl td{padding:4px 8px 4px 0}
+   color:var(--muted);font-weight:600;padding:0 14px 5px 0}
+ .celik table.mtbl td{padding:4px 14px 4px 0}
+ .celik table.mtbl th:last-child,.celik table.mtbl td:last-child{padding-right:0}
  .celik .ozet{font-size:12.5px;color:var(--ink-2);margin-top:8px;
    padding:7px 10px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm)}
  .celik #ag-ektbl input,.celik #ag-ektbl select{padding:3px 6px;font-size:12px}
@@ -8404,8 +8537,9 @@ function MTBL(id,ekleFn){
 }
 const MT_CSS=`<style>
  .mt table.mtbl th{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);
-   font-weight:600;text-align:left;padding:0 6px 5px 0;white-space:nowrap}
- .mt table.mtbl td{padding:3px 6px 3px 0;vertical-align:middle}
+   font-weight:600;padding:0 14px 5px 0;white-space:nowrap}
+ .mt table.mtbl td{padding:3px 14px 3px 0;vertical-align:middle}
+ .mt table.mtbl th:last-child,.mt table.mtbl td:last-child{padding-right:0}
  .mt table.mtbl input,.mt table.mtbl select{padding:3px 6px;font-size:12px;min-width:52px}
  .mt table.mtbl td.gc{font-weight:600;color:var(--ink);white-space:nowrap;text-align:right;padding-right:12px}
  .mt table.mtbl tbody tr:nth-child(odd){background:color-mix(in srgb,var(--panel-2) 55%,transparent)}
@@ -10013,62 +10147,96 @@ function cizOtopark(){
     if(!(alan>0&&yuk>0)) continue;
     kat.push({i,ad:(Q('ot_ad'+i)||{}).value||("Kat "+(i+1)),alan,yuk,
       ae:N_('ot_ae'+i), ay:N_('ot_ay'+i)||yuk,
+      ts:S_('ot_ts'+i)||'Ş1', ds:S_('ot_ds'+i)||'Ş1',
       dum:num((Q('ot_dum'+i)||{}).textContent), gun:num((Q('ot_gun'+i)||{}).textContent),
+      yf:num((Q('ot_yf'+i)||{}).textContent), nf:num((Q('ot_nf'+i)||{}).textContent),
       aq:num((Q('ot_aq'+i)||{}).textContent),
       kritik:((Q('ot_kr'+i)||{}).textContent||"").trim()});
   }
   if(!kat.length){ yaz('cz-otopark',''); return; }
-  const W=580, KY=Math.min(Math.max(Math.floor(230/kat.length),34), 62);
-  const H=64+kat.length*KY+66;
-  const x0=118, x1=W-150, gen=x1-x0;
-  const thDebi=N_('op_thdebi'), dtDebi=N_('op_dtdebi');
-  const thSec=(Q('op_thsec')||{}).textContent||"", dtSec=(Q('op_dtsec')||{}).textContent||"";
+  /* şaft listeleri — kat sırasına göre benzersiz */
+  const teklist=(a)=>{ const o=[]; kat.forEach(k=>{ if(o.indexOf(k[a])<0) o.push(k[a]); }); return o.sort(); };
+  const dU=teklist('ds'), tU=teklist('ts');
+  const tazeVar=kat.some(k=>k.ae>0) || N_('op_taze')>0;
+  const AD=(dU.length>1||tU.length>1)?48:18;      /* şaft borusu adımı */
+  const dGen=(dU.length-1)*AD, tGen=(tU.length-1)*AD;
+  const KY=Math.min(Math.max(Math.floor(230/kat.length),38), 62);
+  const solPay=126+tGen, sagPay=150+dGen;
+  const W=Math.max(580, solPay+sagPay+150);
+  const H=64+kat.length*KY+104;
+  const x0=solPay, x1=W-sagPay, gen=x1-x0;
+  const dX=j=>x1+20+j*AD;                        /* duman şaft borusu x */
+  const tX=j=>x0-28-j*AD;                        /* taze şaft borusu x */
+  const yUst=50, yAlt=56+kat.length*KY;
   let g="";
-  g+=TX(20,26,"Otopark kesiti — "+kat.length+" kat",'txb','start');
+  g+=TX(20,26,"Otopark kesiti — "+kat.length+" kat · "+dU.length+" duman / "+tU.length+" taze hava şaftı",'txb','start');
   /* zemin */
-  g+=L(x0-24,50,x1+24,50,'ln2')+tarama(x0-24,45,gen+48,5);
-  g+=TX(x0-28,44,"zemin",'txs','end');
+  g+=L(x0-14,yUst,x1+14,yUst,'ln2')+tarama(x0-14,yUst-5,gen+28,5);
+  /* düşey şaft boruları */
+  dU.forEach((sa,j)=>{ const x=dX(j);
+    g+=R(x,yUst+4,10,yAlt-yUst+4,'lnw');
+    g+=TX(x+5,yUst-4,sa,'txb'); });
+  if(tazeVar) tU.forEach((sa,j)=>{ const x=tX(j);
+    g+=R(x-10,yUst+4,10,yAlt-yUst+4,'okf');
+    g+=TX(x-5,yUst-4,sa,'txb'); });
+  /* katlar */
   kat.forEach((k,n)=>{
     const y=56+n*KY, h=KY-8;
     const kritik=k.kritik.indexOf("kritik")>=0||k.kritik.indexOf("★")>=0;
     g+=R(x0,y,gen,h,kritik?'badf':'lnf');
     g+=L(x0,y+h,x1,y+h,'ln2');
-    g+=TX(x0-10,y+h/2+4,String(k.ad).slice(0,14),'tx','end');
-    g+=TX(x0+10,y+h/2+4,nf(k.alan,0)+" m²  ·  h="+nf(k.yuk,2)+" m",'txs','start');
-    /* duman tahliye kanalı (sağ) */
-    g+=R(x1-30,y+4,12,h-8,'lnw');
-    g+=kuvvet(x1-24,y+h/2,x1+34,y+h/2,"",'frc');
-    /* taze hava girişi (sol) */
+    g+=TX(x0-36-tGen,y+h/2+4,String(k.ad).slice(0,14),'tx','end');
+    g+=TX(x0+10,y+h/2+(k.ae>0?-3:4),nf(k.alan,0)+" m²  ·  h="+nf(k.yuk,2)+" m",'txs','start');
+    /* duman: kattan kendi şaftına */
+    const jd=dU.indexOf(k.ds);
+    g+=kuvvet(x1,y+h/2,dX(jd)-2,y+h/2,"",'frc');
+    g+=TX(dX(dU.length-1)+22,y+h/2-1,nf(k.dum,0)+" m³/h",'txs','start');
+    g+=TX(dX(dU.length-1)+22,y+h/2+11,"duman "+k.ds+(k.ae>0?" · taze "+k.ts:""),'txh','start');
+    if(kritik) g+=TX(x1-14,y+h/2+4,"kritik kat",'badtx','end');
+    /* taze hava: kendi şaftından kata (fan) + doğal açıklık */
+    if(tazeVar){
+      const jt=tU.indexOf(k.ts);
+      g+=kuvvet(tX(jt)-2,y+h/2,x0+4,y+h/2,"",'ok');
+    }
     if(k.ae>0){
       const ah=Math.min(h-10,Math.max(k.ay*6,10));
       g+=R(x0-9,y+(h-ah)/2,9,ah,'okf');
-      g+=kuvvet(x0-56,y+h/2,x0-14,y+h/2,"",'ok');
-      g+=TX(x0-60,y+h/2+4,nf(k.ae,1)+" m²",'txs','end');
+      g+=TX(x0+10,y+h/2+11,"açıklık "+nf(k.ae,1)+" m²",'txs','start');
     }
-    /* debi etiketleri */
-    g+=TX(x1+40,y+h/2-1,nf(k.dum,0)+" m³/h",'txs','start');
-    if(kritik) g+=TX(x1+40,y+h/2+11,"kritik kat",'badtx','start');
   });
-  const yb=56+kat.length*KY;
-  /* fanlar */
-  const fy=yb+26;
-  g+=CI(x1-24,fy,13,'lnf')+L(x1-33,fy,x1-15,fy,'ln')+L(x1-24,fy-9,x1-24,fy+9,'ln');
-  g+=TX(x1-24,fy+28,"duman tahliye fanı",'txb');
-  g+=TX(x1-24,fy+41,nf(dtDebi,0)+" m³/h",'txs');
-  g+=TX(x1-24,fy+53,String(dtSec).slice(0,26),'txh');
-  if(N_('op_taze')>0){
-    g+=CI(x0+18,fy,13,'lnf')+L(x0+9,fy,x0+27,fy,'ln')+L(x0+18,fy-9,x0+18,fy+9,'ln');
-    g+=TX(x0+18,fy+28,"taze hava fanı",'txb');
-    g+=TX(x0+18,fy+41,nf(thDebi,0)+" m³/h",'txs');
-    g+=TX(x0+18,fy+53,String(thSec).slice(0,26),'txh');
+  /* fanlar — her şaftın altında bir sembol */
+  const fy=yAlt+40;
+  const nDT=Math.max(N_('op_dtfan'),1), nTH=Math.max(N_('op_thfan'),1);
+  const saftDebi=(liste,anahtar,yanginAl,normalAl)=>{
+    const m={};
+    kat.forEach(k=>{ const a=k[anahtar];
+      const o=m[a]||(m[a]={y:0,n:0});
+      o.y=Math.max(o.y,k[yanginAl]); o.n+=k[normalAl]; });
+    return liste.map(a=>Math.max(m[a]?m[a].y:0, m[a]?m[a].n:0));
+  };
+  const dDeb=saftDebi(dU,'ds','dum','gun');
+  dU.forEach((sa,j)=>{ const x=dX(j)+5;
+    g+=CI(x,fy,11,'lnf')+L(x-8,fy,x+8,fy,'ln')+L(x,fy-8,x,fy+8,'ln');
+    g+=TX(x,fy+24,sa,'txb');
+    g+=TX(x,fy+36,nf(dDeb[j],0),'txs');
+    g+=TX(x,fy+47,nf(nDT,0)+" adet",'txh'); });
+  g+=TX(dX(0)+5,fy-20,"duman tahliye",'txb','start');
+  if(tazeVar && N_('op_taze')>0){
+    const tDeb=saftDebi(tU,'ts','yf','nf');
+    tU.forEach((sa,j)=>{ const x=tX(j)-5;
+      const yok=!(tDeb[j]>0);
+      g+=CI(x,fy,11,yok?'grid':'okf')+L(x-8,fy,x+8,fy,'ln')+L(x,fy-8,x,fy+8,'ln');
+      g+=TX(x,fy+24,sa,'txb');
+      g+=TX(x,fy+36,yok?"gerekmez":nf(tDeb[j],0),yok?'txh':'txs');
+      if(!yok) g+=TX(x,fy+47,nf(nTH,0)+" adet",'txh'); });
+    g+=TX(tX(tU.length-1)-15,fy-20,"taze hava",'txb','start');
   } else {
-    g+=TX(x0+18,fy+8,"taze hava fanı",'txs');
-    g+=TX(x0+18,fy+22,"gerekli değil",'txh');
+    g+=TX(x0-20,fy+2,"taze hava fanı gerekli değil",'txh','end');
   }
-  yaz('cz-otopark',SVG(W,H,g,"Otopark kat kesiti")+
-    `<div class="czlejant"><span style="color:var(--cz-ok)">Yeşil: doğal taze hava açıklığı</span>`+
+  yaz('cz-otopark',SVG(W,H,g,"Otopark kat kesiti — şaft bazlı")+
+    `<div class="czlejant"><span style="color:var(--cz-ok)">Yeşil: taze hava şaftı / doğal açıklık</span>`+
     `<span style="color:var(--cz-bad)">Kırmızı kat: kritik (belirleyen) kat</span>`+
-    `<span>Turuncu: duman tahliye şaftı</span></div>`);
+    `<span>Turuncu: duman tahliye şaftı — aynı şaftı seçen katlar ortak boruya bağlanır</span></div>`);
 }
 
 /* ============ JET FAN MENZİLİ ============ */
@@ -12674,9 +12842,2249 @@ return {cizCivata,cizKaynak,cizEksantrik,cizTaban,cizAnkraj,cizKulak,cizKiris,ci
         cizHamam,cizZon,cizPompaGen,cizKazanHav,cizHavuzSirk,cizRadDilim,cizGunesIsinim};
 })();
 
+
+/* ================= DXF HÜCRE ÖLÇÜ ÇIKARICI ================= */
+const DXF_CSS=`<style>
+.dxfx{--dx-alt:rgba(74,87,201,.13);--dx-ust:rgba(168,98,15,.15);--dx-tam:rgba(140,90,200,.14);
+ --dx-err:#c0504d;--dx-errbg:rgba(192,80,77,.10);font-size:13.5px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .dxfx{
+ --dx-alt:rgba(139,147,248,.17);--dx-ust:rgba(224,164,95,.16);--dx-tam:rgba(170,130,235,.17);
+ --dx-err:#e0706c;--dx-errbg:rgba(224,112,108,.12)}}
+:root[data-theme="dark"] .dxfx{
+ --dx-alt:rgba(139,147,248,.17);--dx-ust:rgba(224,164,95,.16);--dx-tam:rgba(170,130,235,.17);
+ --dx-err:#e0706c;--dx-errbg:rgba(224,112,108,.12)}
+.dxfx .svgwrap svg{background:var(--panel)}
+.dxfx #dxf_drop{border: 2px dashed var(--line-2); border-radius: 12px; background: var(--panel-2);
+          padding: 34px 20px; text-align: center; color: var(--ink-2); cursor: pointer;
+          transition: background .15s, border-color .15s;}
+.dxfx #dxf_drop.over{background: var(--accent-soft); border-color: var(--accent-2);}
+.dxfx #dxf_drop b{color: var(--accent);}
+.dxfx #dxf_drop input{display: none;}
+.dxfx .hint{font-size: 12px; color: var(--muted); margin-top: 6px;}
+.dxfx .toolbar{display: flex; gap: 8px; margin: 14px 0 4px; flex-wrap: wrap;}
+.dxfx button{border: 1px solid var(--line); background: var(--panel); border-radius: 8px;
+           padding: 6px 13px; font: inherit; font-size: 13px; cursor: pointer; color: var(--ink);}
+.dxfx button:hover{border-color: var(--accent-2); color: var(--accent-2);}
+.dxfx button.primary{background: var(--accent); border-color: var(--accent); color: var(--on-accent);}
+.dxfx button.primary:hover{background: var(--accent-2); color: var(--on-accent);}
+.dxfx .card{background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+          margin-top: 16px; overflow: hidden; box-shadow:var(--shadow);}
+.dxfx .card > .head{padding: 13px 18px; border-bottom: 1px solid var(--line);
+                  display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline;}
+.dxfx .card h2{margin: 0; font-size: 16px; color: var(--accent);}
+.dxfx .meta{font-size: 12.5px; color: var(--muted);}
+.dxfx .meta b{color: var(--ink); font-weight: 600;}
+.dxfx h3{font-size: 13.5px; margin: 14px 0 6px; color: var(--accent); text-transform: uppercase;
+       letter-spacing: .4px;}
+.dxfx table{border-collapse: collapse; width: 100%; font-size: 13px;}
+.dxfx th, .dxfx td{border: 1px solid var(--line); padding: 5px 10px; text-align: left;}
+.dxfx th{background: var(--panel-2); font-weight: 600; font-size: 12px;}
+.dxfx td.num, .dxfx th.num{text-align: right; font-variant-numeric: tabular-nums;}
+.dxfx tr.top td{font-weight: 600; background: var(--panel-2);}
+.dxfx .k-alt{background: var(--dx-alt);}
+.dxfx .k-ust{background: var(--dx-ust);}
+.dxfx .k-tam{background: var(--dx-tam);}
+.dxfx .area{background: var(--ok-soft); border: 1px solid var(--ok); color: var(--ok);
+          border-radius: 8px; padding: 9px 14px; margin: 10px 0 2px; font-size: 14px;}
+.dxfx .area b{font-size: 17px;}
+.dxfx .area small{color: var(--ok);}
+.dxfx .warn{background: var(--warn-soft); border: 1px solid var(--warn); color: var(--warn);
+          border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-size: 13px;}
+.dxfx .err{background: var(--dx-errbg); border: 1px solid var(--dx-err); color: var(--dx-err);
+          border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-size: 13px;}
+.dxfx .st{border-radius: 8px; padding: 9px 14px; margin: 0 0 4px; font-size: 13.5px;}
+.dxfx .st b{font-size: 14.5px;}
+.dxfx .st-ok{background: var(--ok-soft); border: 1px solid var(--ok); color: var(--ok);}
+.dxfx .st-warn{background: var(--warn-soft); border: 1px solid var(--warn); color: var(--warn);}
+.dxfx .st-err{background: var(--dx-errbg); border: 1px solid var(--dx-err); color: var(--dx-err);}
+.dxfx .chklist{font-size: 12.5px; margin: 6px 0 0; padding: 0; list-style: none;}
+.dxfx .chklist li{padding: 1.5px 0;}
+.dxfx .chklist .ok{color: var(--ok);}
+.dxfx .chklist .fail{color: var(--dx-err); font-weight: 600;}
+.dxfx .kapali{color: var(--muted); font-style: italic;}
+.dxfx details{margin-top: 12px;}
+.dxfx summary{cursor: pointer; font-size: 13px; color: var(--accent-2); user-select: none;}
+.dxfx .svgwrap{overflow: auto; border: 1px solid var(--line); border-radius: 8px;
+             margin-top: 8px; background: var(--panel); max-height: 560px;}
+.dxfx .legend{display: inline-flex; gap: 14px; font-size: 12px; color: var(--muted); margin-left: 8px;}
+.dxfx .legend i{display: inline-block; width: 12px; height: 12px; border-radius: 3px;
+              margin-right: 4px; vertical-align: -1px;}
+</style>`;
+/* --- çekirdek DXF çözümleyici (dış bağımlılık yok) --- */
+
+/* DXF Hücre & Modül Ölçü Çıkarıcı — çekirdek analiz kodu.
+   Hem Node hem tarayıcıda çalışır. API: analyzeDxf(text, fileName) */
+(function (global) {
+'use strict';
+
+function fixTR(s) {
+  if (!s) return s;
+  return s.replace(/\\U\+([0-9A-Fa-f]{4})/g, function (m, h) { return String.fromCharCode(parseInt(h, 16)); });
+}
+
+function parseDxf(text) {
+  const lines = text.split(/\r\n|\n|\r/);
+  const pairs = [];
+  for (let i = 0; i + 1 < lines.length; i += 2) {
+    const code = parseInt(lines[i].trim(), 10);
+    if (Number.isNaN(code)) continue;
+    pairs.push([code, lines[i + 1]]);
+  }
+  let section = null, curType = null, cur = null;
+  const texts = [], dims = [], geo = [], rlines = [], rpolys = [];
+  // Katman kutuları: çizim her varlığı "(M1) - Tip_Right_<id>_" gibi kendi katmanında
+  // etiketler; modül geometrisi buradan birebir okunur (bkz. layerGeometry).
+  const layerBoxes = {};
+  function grow(layer, x, y) {
+    if (!layer || x == null || y == null || !isFinite(x) || !isFinite(y)) return;
+    const b = layerBoxes[layer] ||
+      (layerBoxes[layer] = { xlo: 1e9, xhi: -1e9, ylo: 1e9, yhi: -1e9, n: 0 });
+    if (x < b.xlo) b.xlo = x;
+    if (x > b.xhi) b.xhi = x;
+    if (y < b.ylo) b.ylo = y;
+    if (y > b.yhi) b.yhi = y;
+    b.n++;
+  }
+  function flush() {
+    if (!cur) { curType = null; return; }
+    if (cur.sec === 'ENTITIES') {
+      if (curType === 'LINE') { grow(cur.layer, cur.x1, cur.y1); grow(cur.layer, cur.x2, cur.y2); }
+      else if (curType === 'LWPOLYLINE') cur.pts.forEach(function (p) { grow(cur.layer, p[0], p[1]); });
+      else if (curType === 'CIRCLE' && cur.r != null) {
+        grow(cur.layer, cur.x - cur.r, cur.y - cur.r);
+        grow(cur.layer, cur.x + cur.r, cur.y + cur.r);
+      }
+      if (curType === 'TEXT' || curType === 'MTEXT') {
+        texts.push({ str: fixTR((cur.str || '').trim()), x: cur.x, y: cur.y, h: cur.h || 6, layer: cur.layer });
+      } else if (curType === 'DIMENSION') dims.push(cur);
+      else if (curType === 'LINE') {
+        if (cur.x1 != null && cur.x2 != null) {
+          geo.push({ xlo: Math.min(cur.x1, cur.x2), xhi: Math.max(cur.x1, cur.x2),
+                     ylo: Math.min(cur.y1, cur.y2), yhi: Math.max(cur.y1, cur.y2) });
+          rlines.push([cur.x1, cur.y1, cur.x2, cur.y2]);
+        }
+      } else if (curType === 'LWPOLYLINE' && cur.pts.length) {
+        const xs = cur.pts.map(p => p[0]), ys = cur.pts.map(p => p[1]);
+        geo.push({ xlo: Math.min.apply(null, xs), xhi: Math.max.apply(null, xs),
+                   ylo: Math.min.apply(null, ys), yhi: Math.max.apply(null, ys) });
+        rpolys.push({ pts: cur.pts, closed: cur.closed });
+      }
+    }
+    cur = null; curType = null;
+  }
+  for (let i = 0; i < pairs.length; i++) {
+    const c = pairs[i][0], v = pairs[i][1];
+    if (c === 0 && v === 'SECTION') { flush(); section = pairs[i + 1] && pairs[i + 1][0] === 2 ? pairs[i + 1][1] : null; continue; }
+    if (c === 0 && v === 'ENDSEC') { flush(); section = null; continue; }
+    if (section !== 'ENTITIES') continue;
+    if (c === 0) {
+      flush();
+      if (v === 'TEXT' || v === 'MTEXT' || v === 'DIMENSION' || v === 'LINE' ||
+          v === 'LWPOLYLINE' || v === 'CIRCLE') {
+        curType = v; cur = { sec: section, pts: [] };
+      }
+      continue;
+    }
+    if (!cur) continue;
+    if (c === 8) { cur.layer = fixTR(v); continue; }
+    if (curType === 'CIRCLE') {
+      if (c === 10) cur.x = +v; else if (c === 20) cur.y = +v; else if (c === 40) cur.r = +v;
+    } else if (curType === 'LINE') {
+      if (c === 10) cur.x1 = +v; else if (c === 20) cur.y1 = +v;
+      else if (c === 11) cur.x2 = +v; else if (c === 21) cur.y2 = +v;
+    } else if (curType === 'LWPOLYLINE') {
+      if (c === 10) cur.pts.push([+v, 0]);
+      else if (c === 20 && cur.pts.length) cur.pts[cur.pts.length - 1][1] = +v;
+      else if (c === 70) cur.closed = (+v & 1) === 1;
+    } else if (curType === 'TEXT' || curType === 'MTEXT') {
+      if (c === 1) cur.str = (cur.str || '') + v;
+      else if (c === 3 && curType === 'MTEXT') cur.str = (cur.str || '') + v;
+      else if (c === 10) cur.x = +v; else if (c === 20) cur.y = +v;
+      else if (c === 40) cur.h = +v;
+    } else if (curType === 'DIMENSION') {
+      if (c === 13) cur.x13 = +v; else if (c === 23) cur.y13 = +v;
+      else if (c === 14) cur.x14 = +v; else if (c === 24) cur.y14 = +v;
+      else if (c === 42) cur.meas = +v;
+    }
+  }
+  flush();
+  return { texts: texts, dims: dims, geo: geo, rlines: rlines, rpolys: rpolys,
+           layerBoxes: layerBoxes };
+}
+
+/* ============ KATMAN TABANLI MODÜL GEOMETRİSİ ============
+   Çizim her varlığı kendi katmanında etiketler:
+     "(M1) - Plakalı Eşanjör_Right_9286776_"  → modül + görünüş
+     "#Pedestal#_Right_...", "#Roof#_...", "#DirectionArrow#_...", "#InfoLayer#"
+   Modülün boyu ve YÜKSEKLİĞİ kendi katmanındaki ölçülerden birebir okunur; böylece
+   bütün modüllere aynı kat yüksekliğini varsaymak gerekmez — DES ailesinde plakalı
+   eşanjör gövdesi komşularından yüksektir ve bu fark ancak böyle görülür. */
+const MOD_LAY = /^\((M\d+)\)\s*-\s*(.+?)_(Right|Left|Front|Back|Top|Bottom)_/;
+const SPECIAL_LAY = /^(#[A-Za-z]+#)_(Right|Left|Front|Back|Top|Bottom)_/;
+const LG_TOL = 2;    // çizim birimi (cm) — ölçünün kutu dışına taşma payı
+const LG_SNAP = 20;  // seviye yakalama payı (bağlantı bileziği taşması ~130 mm)
+
+function lgMergeBox(a, b) {
+  if (!a) return { xlo: b.xlo, xhi: b.xhi, ylo: b.ylo, yhi: b.yhi, n: b.n };
+  a.xlo = Math.min(a.xlo, b.xlo); a.xhi = Math.max(a.xhi, b.xhi);
+  a.ylo = Math.min(a.ylo, b.ylo); a.yhi = Math.max(a.yhi, b.yhi); a.n += b.n;
+  return a;
+}
+
+// Kutunun içinde kalan ölçüler arasından en uzununu seç (modülün kendi gövde ölçüsü).
+// Detay ölçüleri daha kısadır, toplam/ara-toplam ölçüleri kutudan taşar.
+// `anchors` verilirse ölçünün ALT ucu bilinen bir yapısal seviyede olmalıdır; yoksa
+// kasanın ortasında duran damper/batarya açıklığı gövde yüksekliği sanılır
+// (KS-1'de "Üç Bağlantılı Karışım"ın tek dikey ölçüsü 750'lik damper ağzıdır).
+function lgOwnDim(list, lo, hi, anchors) {
+  let best = null;
+  list.forEach(function (d) {
+    if (d.a < lo - LG_TOL || d.b > hi + LG_TOL) return;
+    if (anchors && !anchors.some(function (L) { return Math.abs(d.a - L) <= LG_TOL; })) return;
+    if (!best || (d.b - d.a) > (best.b - best.a)) best = d;
+  });
+  return best;
+}
+
+function lgSnap(levels, v) {
+  let best = null, bestD = Infinity;
+  levels.forEach(function (L) {
+    const d = Math.abs(L - v);
+    if (d < bestD) { bestD = d; best = L; }
+  });
+  return bestD <= LG_SNAP ? best : null;
+}
+
+function layerGeometry(P, tableHeightMm) {
+  const modBox = {}, modType = {}, modDims = {}, special = {};
+  Object.keys(P.layerBoxes).forEach(function (name) {
+    const m = name.match(MOD_LAY);
+    if (m) {
+      modType[m[1]] = m[2].trim();
+      if (!modBox[m[1]]) modBox[m[1]] = {};
+      modBox[m[1]][m[3]] = lgMergeBox(modBox[m[1]][m[3]], P.layerBoxes[name]);
+      return;
+    }
+    const s = name.match(SPECIAL_LAY);
+    if (s) {
+      if (!special[s[1]]) special[s[1]] = {};
+      special[s[1]][s[2]] = lgMergeBox(special[s[1]][s[2]], P.layerBoxes[name]);
+    }
+  });
+  P.dims.forEach(function (d) {
+    if (d.meas == null || d.x13 == null || d.x14 == null || d.y13 == null || d.y14 == null) return;
+    const yatay = Math.abs(d.y13 - d.y14) < 0.01, dikey = Math.abs(d.x13 - d.x14) < 0.01;
+    if (!yatay && !dikey) return;
+    const m = (d.layer || '').match(MOD_LAY);
+    if (!m) return;
+    if (!modDims[m[1]]) modDims[m[1]] = {};
+    if (!modDims[m[1]][m[3]]) modDims[m[1]][m[3]] = [];
+    modDims[m[1]][m[3]].push({
+      yatay: yatay, mm: Math.round(d.meas * 10),
+      a: yatay ? Math.min(d.x13, d.x14) : Math.min(d.y13, d.y14),
+      b: yatay ? Math.max(d.x13, d.x14) : Math.max(d.y13, d.y14)
+    });
+  });
+
+  const ids = Object.keys(modBox);
+  if (!ids.length) return null;
+  const view = ids.some(function (id) { return modBox[id].Right; }) ? 'Right' : 'Left';
+
+  let casingBottom = null;
+  if (special['#Pedestal#'] && special['#Pedestal#'][view]) {
+    casingBottom = special['#Pedestal#'][view].yhi;
+  }
+
+  const mods = [];
+  ids.forEach(function (id) {
+    const box = modBox[id][view];
+    if (!box) return;
+    const dl = (modDims[id] && modDims[id][view]) || [];
+    const hd = lgOwnDim(dl.filter(function (d) { return d.yatay; }), box.xlo, box.xhi, null);
+    mods.push({
+      name: id, type: modType[id] || '', box: box,
+      vdims: dl.filter(function (d) { return !d.yatay; }),
+      xlo: hd ? hd.a : null, xhi: hd ? hd.b : null, boy: hd ? hd.mm : null,
+      ylo: null, yhi: null, yuk: null,
+      xSrc: hd ? 'ölçü' : 'kutu', ySrc: 'kutu'
+    });
+  });
+  if (!mods.length) return null;
+
+  // Yapısal dikey seviyeler kasa tabanından yayılır: tabana oturan bir modülün ölçüsü
+  // kabul edilince üst ucu yeni seviye olur; üst kat modülleri ona dayanarak çözülür.
+  const levels = [];
+  function pushLvl(v) {
+    if (v == null || !isFinite(v)) return;
+    if (!levels.some(function (L) { return Math.abs(L - v) < 0.6; })) levels.push(v);
+  }
+  if (casingBottom == null) {
+    casingBottom = Math.min.apply(null, mods.map(function (m) { return m.box.ylo; }));
+  }
+  pushLvl(casingBottom);
+  if (tableHeightMm) pushLvl(casingBottom + tableHeightMm / 10);
+
+  let ilerleme = true;
+  while (ilerleme) {
+    ilerleme = false;
+    mods.forEach(function (m) {
+      if (m.ylo != null) return;
+      const vd = lgOwnDim(m.vdims, m.box.ylo, m.box.yhi, levels);
+      if (!vd) return;
+      m.ylo = vd.a; m.yhi = vd.b; m.yuk = vd.mm; m.ySrc = 'ölçü';
+      pushLvl(vd.a); pushLvl(vd.b);
+      ilerleme = true;
+    });
+  }
+  levels.sort(function (a, b) { return a - b; });
+  mods.forEach(function (m) {
+    if (m.ylo == null) {
+      const lo = lgSnap(levels, m.box.ylo), hi = lgSnap(levels, m.box.yhi);
+      if (lo != null && hi != null && hi > lo) {
+        m.ylo = lo; m.yhi = hi; m.yuk = Math.round((hi - lo) * 10); m.ySrc = 'seviye';
+      } else {
+        m.ylo = m.box.ylo; m.yhi = m.box.yhi;
+        m.yuk = Math.round((m.box.yhi - m.box.ylo) * 10); m.ySrc = 'kutu';
+      }
+    }
+    if (m.xlo == null) {
+      m.xlo = m.box.xlo; m.xhi = m.box.xhi; m.boy = Math.round((m.box.xhi - m.box.xlo) * 10);
+    }
+    delete m.vdims;
+  });
+
+  mods.sort(function (a, b) { return a.xlo - b.xlo || a.ylo - b.ylo; });
+  const unitLo = Math.min.apply(null, mods.map(function (m) { return m.xlo; }));
+  const unitHi = Math.max.apply(null, mods.map(function (m) { return m.xhi; }));
+  mods.forEach(function (m) {
+    m.x0 = Math.round((m.xlo - unitLo) * 10);
+    m.x1 = Math.round((m.xhi - unitLo) * 10);
+    m.y0 = Math.round((m.ylo - casingBottom) * 10);
+    m.y1 = Math.round((m.yhi - casingBottom) * 10);
+  });
+
+  const yTop = Math.max.apply(null, mods.map(function (m) { return m.yhi; }));
+  return {
+    view: view, modules: mods, casingBottom: casingBottom, yTop: yTop,
+    unitLo: unitLo, unitHi: unitHi,
+    totalLen: Math.round((unitHi - unitLo) * 10),
+    maxHeight: Math.max.apply(null, mods.map(function (m) { return m.y1; })),
+    levels: levels,
+    pedestalMm: (special['#Pedestal#'] && special['#Pedestal#'][view])
+      ? Math.round((special['#Pedestal#'][view].yhi - special['#Pedestal#'][view].ylo) * 10) : null,
+    special: special
+  };
+}
+
+function mergeIntervals(ivals, gap) {
+  ivals.sort(function (a, b) { return a[0] - b[0]; });
+  const out = [];
+  for (let i = 0; i < ivals.length; i++) {
+    const iv = ivals[i], last = out[out.length - 1];
+    if (last && iv[0] - last[1] < gap) { if (iv[1] > last[1]) last[1] = iv[1]; }
+    else out.push([iv[0], iv[1]]);
+  }
+  return out;
+}
+
+function mode(arr) {
+  const f = {};
+  let best = null, bestN = 0;
+  for (let i = 0; i < arr.length; i++) {
+    const k = arr[i];
+    f[k] = (f[k] || 0) + 1;
+    if (f[k] > bestN) { bestN = f[k]; best = k; }
+  }
+  return best;
+}
+
+function analyzeDxf(text, fileName) {
+  const P = parseDxf(text);
+  const texts = P.texts, dims = P.dims, geo = P.geo;
+
+  // ---------- teknik tablo ----------
+  const kv = {};
+  const tableLabelXs = [];
+  const TABLE_RE = /^(Santral Adı|Model Adı|Boyut Adı|Genişlik|Yükseklik|Ayak Yüksekliği \(mm\)|Ağırlık|Hava Debisi|Proje Adı)$/;
+  for (let i = 0; i < texts.length; i++) {
+    const lt = texts[i];
+    if (!TABLE_RE.test(lt.str)) continue;
+    let val = null;
+    for (let j = 0; j < texts.length; j++) {
+      const t = texts[j];
+      if (Math.abs(t.y - lt.y) < 3 && t.x > lt.x + 10 && (!val || t.x < val.x)) val = t;
+    }
+    if (val && !(lt.str in kv)) kv[lt.str] = val.str;
+    tableLabelXs.push(lt.x);
+  }
+  const modTypes = {};
+  for (let i = 0; i < texts.length; i++) {
+    const m = texts[i].str.match(/^\((M\d+)\)\s*-\s*(.+?)\s*-\s*/);
+    if (m && !modTypes[m[1]]) modTypes[m[1]] = m[2].trim();
+  }
+  const W = kv['Genişlik'] ? parseInt(kv['Genişlik'].replace(/[^\d]/g, ''), 10) : null;
+  const Htab = kv['Yükseklik'] ? parseInt(kv['Yükseklik'].replace(/[^\d]/g, ''), 10) : null;
+  const ayak = kv['Ayak Yüksekliği (mm)'] ? parseInt(kv['Ayak Yüksekliği (mm)'].replace(/[^\d]/g, ''), 10) : 150;
+  const tableX = tableLabelXs.length ? Math.min.apply(null, tableLabelXs) - 30 : Infinity;
+
+  // Katman geometrisi — modül ölçülerinin ve yan görünüş bölgesinin asıl kaynağı.
+  const LG = layerGeometry(P, Htab);
+
+  // ---------- görünüş kutuları ----------
+  const gsegs = geo.filter(function (g) { return (g.yhi - g.ylo) <= 300 && g.xlo < tableX; });
+  const bands = mergeIntervals(gsegs.map(function (g) { return [g.ylo, g.yhi]; }), 25);
+  const boxes = [];
+  for (let bi = 0; bi < bands.length; bi++) {
+    const ylo = bands[bi][0], yhi = bands[bi][1];
+    const inBand = gsegs.filter(function (g) { return g.ylo >= ylo - 0.5 && g.yhi <= yhi + 0.5; });
+    const xIv = mergeIntervals(inBand.map(function (g) { return [g.xlo, g.xhi]; }), 25);
+    for (let xi = 0; xi < xIv.length; xi++) {
+      if (xIv[xi][1] - xIv[xi][0] < 20 || yhi - ylo < 20) continue;
+      boxes.push({ xlo: xIv[xi][0], xhi: xIv[xi][1], ylo: ylo, yhi: yhi, chains: [] });
+    }
+  }
+
+  // ---------- ölçüler ----------
+  const hsegs = dims.filter(function (d) {
+    return d.meas != null && d.x13 != null && d.x14 != null && d.y13 != null && d.y14 != null &&
+      Math.abs(d.y13 - d.y14) < 0.01;
+  }).map(function (d) {
+    return { lo: Math.min(d.x13, d.x14), hi: Math.max(d.x13, d.x14), y: d.y13, meas: d.meas };
+  }).filter(function (d) { return d.hi - d.lo >= 3; });
+  const vdims = dims.filter(function (d) {
+    return d.meas != null && d.x13 != null && d.x14 != null && d.y13 != null && d.y14 != null &&
+      Math.abs(d.x13 - d.x14) < 0.01;
+  }).map(function (d) {
+    return { lo: Math.min(d.y13, d.y14), hi: Math.max(d.y13, d.y14), x: d.x13, meas: d.meas };
+  });
+
+  for (let i = 0; i < hsegs.length; i++) {
+    const s = hsegs[i];
+    let best = null, bestD = 71;
+    for (let j = 0; j < boxes.length; j++) {
+      const b = boxes[j];
+      if (s.lo < b.xlo - 12 || s.hi > b.xhi + 12) continue;
+      const d = (s.y >= b.ylo && s.y <= b.yhi) ? 0 : (s.y < b.ylo ? b.ylo - s.y : s.y - b.yhi);
+      if (d < bestD) { bestD = d; best = b; }
+    }
+    if (best) best.chains.push(s);
+  }
+  for (let j = 0; j < boxes.length; j++) {
+    const b = boxes[j], byY = {};
+    for (let i = 0; i < b.chains.length; i++) {
+      const s = b.chains[i], key = Math.round(s.y * 2) / 2;
+      (byY[key] = byY[key] || []).push(s);
+    }
+    b.groups = Object.keys(byY).map(function (y) {
+      const uniq = [];
+      byY[y].sort(function (a, c) { return a.lo - c.lo || a.hi - c.hi; });
+      for (let i = 0; i < byY[y].length; i++) {
+        const s = byY[y][i], last = uniq[uniq.length - 1];
+        if (last && Math.abs(last.lo - s.lo) < 0.5 && Math.abs(last.hi - s.hi) < 0.5) continue;
+        uniq.push(s);
+      }
+      return { y: +y, segs: uniq };
+    });
+    b.extLo = b.chains.length ? Math.min.apply(null, b.chains.map(function (s) { return s.lo; })) : b.xlo;
+    b.extHi = b.chains.length ? Math.max.apply(null, b.chains.map(function (s) { return s.hi; })) : b.xhi;
+  }
+
+  // ---------- kat yapısı (kaide referanslı) ----------
+  const baseVal = ayak / 10;
+  const baseDims = vdims.filter(function (d) {
+    return Math.abs(d.meas - baseVal) < 1 && Math.abs((d.hi - d.lo) - baseVal) < 1;
+  });
+  let deckHeights = [], deckBounds = null, bandY = null;
+  // Kasa tabanı katmandan kesin bilinir (#Pedestal# üstü); yoksa kaide ölçüsünden aranır.
+  if (LG) bandY = LG.casingBottom;
+  if (bandY != null || baseDims.length) {
+    if (bandY == null) {
+      const ys = baseDims.map(function (b) { return Math.round(b.hi * 2) / 2; });
+      bandY = +mode(ys);
+    }
+    let curY = bandY;
+    for (let k = 0; k < 4; k++) {
+      let next = null;
+      for (let i = 0; i < vdims.length; i++) {
+        const d = vdims[i];
+        if (d.meas * 10 < (Htab ? Htab * 0.5 : 400)) continue;
+        if (Math.abs(d.lo - curY) >= 2 || d.hi <= d.lo) continue;
+        if (!next || d.meas < next.meas) next = d;
+      }
+      if (!next) break;
+      deckHeights.push(Math.round(next.meas * 10));
+      curY = next.hi;
+    }
+    if (deckHeights.length) {
+      deckBounds = [bandY];
+      let yy = bandY;
+      for (let i = 0; i < deckHeights.length; i++) { yy += deckHeights[i] / 10; deckBounds.push(yy); }
+    }
+  }
+  if (!deckHeights.length && Htab) deckHeights = [Htab];
+  const nDecks = deckHeights.length;
+
+  // ---------- modül etiketi -> zincir eşleştirme ----------
+  const mlabels = texts.filter(function (t) { return /^M\d+$/.test(t.str); })
+    .map(function (t) { return { str: t.str, x: t.x, y: t.y, h: t.h, cx: t.x + 0.35 * t.h * t.str.length }; });
+  const modVotes = {}, modDecksAll = {}, recs = [];
+  for (let li = 0; li < mlabels.length; li++) {
+    const ml = mlabels[li];
+    let box = null;
+    for (let j = 0; j < boxes.length; j++) {
+      const b = boxes[j];
+      if (ml.cx >= b.xlo - 8 && ml.cx <= b.xhi + 8 && ml.y >= b.ylo - 8 && ml.y <= b.yhi + 8) { box = b; break; }
+    }
+    if (!box || !box.groups.length) continue;
+    const isSideBox = bandY != null && box.ylo - 20 <= bandY && bandY <= box.yhi;
+    let deck = null;
+    if (isSideBox && deckBounds && nDecks > 1 &&
+        ml.y >= deckBounds[0] - 8 && ml.y <= deckBounds[nDecks] + 8) {
+      deck = 0;
+      for (let i = 1; i < nDecks; i++) if (ml.y > deckBounds[i]) deck = i;
+      (modDecksAll[ml.str] = modDecksAll[ml.str] || []).push(deck);
+    }
+    if (ml.cx < box.extLo - 8 || ml.cx > box.extHi + 8) continue;
+    let cands = box.groups.filter(function (g) {
+      return g.segs.some(function (s) { return s.hi - s.lo >= 15; });
+    });
+    if (!cands.length) continue;
+    if (deck != null) {
+      const side = deck === 0 ? cands.filter(function (g) { return g.y <= ml.y; })
+        : deck === nDecks - 1 ? cands.filter(function (g) { return g.y >= ml.y; }) : cands;
+      if (side.length) cands = side;
+    } else if (nDecks === 1) {
+      const below = cands.filter(function (g) { return g.y < ml.y - 5; });
+      if (below.length) cands = below;
+    }
+    const multi = cands.filter(function (g) { return g.segs.length >= 2; });
+    if (multi.length) cands = multi;
+    cands.sort(function (a, b) { return Math.abs(ml.y - a.y) - Math.abs(ml.y - b.y); });
+    const g = cands[0];
+    let val = null, lo = null, hi = null;
+    let seg = null;
+    for (let i = 0; i < g.segs.length; i++) {
+      if (ml.cx >= g.segs[i].lo - 0.5 && ml.cx <= g.segs[i].hi + 0.5) { seg = g.segs[i]; break; }
+    }
+    if (seg) { val = seg.meas; lo = seg.lo; hi = seg.hi; }
+    else {
+      const edges = [box.extLo];
+      for (let i = 0; i < g.segs.length; i++) { edges.push(g.segs[i].lo); edges.push(g.segs[i].hi); }
+      edges.push(box.extHi);
+      edges.sort(function (a, b) { return a - b; });
+      for (let i = 0; i + 1 < edges.length; i++) {
+        if (ml.cx >= edges[i] && ml.cx <= edges[i + 1]) {
+          const wgap = edges[i + 1] - edges[i];
+          if (wgap >= 4) { val = wgap; lo = edges[i]; hi = edges[i + 1]; }
+          break;
+        }
+      }
+      if (val == null) {
+        let near = null, nearD = Infinity;
+        for (let i = 0; i < g.segs.length; i++) {
+          const s = g.segs[i];
+          const d = ml.cx < s.lo ? s.lo - ml.cx : ml.cx - s.hi;
+          if (d < nearD) { nearD = d; near = s; }
+        }
+        if (near) { val = near.meas; lo = near.lo; hi = near.hi; }
+      }
+    }
+    if (val != null) {
+      (modVotes[ml.str] = modVotes[ml.str] || []).push(Math.round(val * 10));
+      recs.push({ name: ml.str, box: box, isSideBox: isSideBox, deck: deck, gy: g.y, lo: lo, hi: hi, ml: ml });
+    }
+  }
+
+  const modules = {};
+  Object.keys(modVotes).forEach(function (name) {
+    const arr = modVotes[name], freq = {};
+    for (let i = 0; i < arr.length; i++) freq[arr[i]] = (freq[arr[i]] || 0) + 1;
+    let best = null;
+    Object.keys(freq).forEach(function (k) {
+      if (!best || freq[k] > freq[best] || (freq[k] === freq[best] && +k > +best)) best = k;
+    });
+    modules[name] = { len: +best, votes: freq[best] + '/' + arr.length, all: freq };
+  });
+
+  let totalLen = null;
+  if (hsegs.length) totalLen = Math.round(Math.max.apply(null, hsegs.map(function (d) { return d.hi - d.lo; })) * 10);
+
+  const isEsanjor = function (name) { return /Eşanjör/i.test(modTypes[name] || ''); };
+
+  // ---------- modül çıktısı ----------
+  // Zincir tabanlı okuma (çapraz kontrol için saklanır)
+  const modOutChain = Object.keys(modules).sort(function (a, b) { return +a.slice(1) - +b.slice(1); })
+    .map(function (name) {
+      const type = modTypes[name] || '';
+      let deck = null, hgt = null;
+      if (nDecks === 1) hgt = deckHeights[0];
+      else if (isEsanjor(name)) { deck = 'her iki kat'; hgt = deckHeights.reduce(function (a, b) { return a + b; }, 0); }
+      else if (modDecksAll[name] && modDecksAll[name].length) {
+        const best = +mode(modDecksAll[name]);
+        deck = best === 0 ? 'alt kat' : 'üst kat';
+        hgt = deckHeights[best] != null ? deckHeights[best] : deckHeights[0];
+        modules[name].deckIdx = best;
+      } else hgt = deckHeights[0];
+      return { name: name, type: type, en: W, boy: modules[name].len, yukseklik: hgt, deck: deck,
+               votes: modules[name].votes, all: modules[name].all };
+    });
+
+  // Asıl modül listesi: katman geometrisi (her modülün KENDİ boyu ve yüksekliği).
+  // Katman yoksa zincir okumasına düşülür.
+  let modOut = modOutChain, deckLevels = null, deckHeightsOut = deckHeights;
+  if (LG) {
+    // Yapısal kat seviyeleri: modüllerin alt/üst sınırlarının birleşimi (mm, taban=0)
+    const lv = [];
+    LG.modules.forEach(function (m) {
+      [m.y0, m.y1].forEach(function (v) {
+        if (!lv.some(function (L) { return Math.abs(L - v) < 6; })) lv.push(v);
+      });
+    });
+    lv.sort(function (a, b) { return a - b; });
+    deckLevels = lv;
+    const chainByName = {};
+    modOutChain.forEach(function (m) { chainByName[m.name] = m; });
+    // Ana kat sınırı = üst kat modüllerinin oturduğu seviye. Üst kat yoksa (tek katlı çizim)
+    // en yaygın gövde üstü alınır; tek bir gövde bunu aşıyorsa (DES plakalı eşanjörü) o
+    // taşan gövdedir, kat sınırı değildir.
+    const ustY0 = LG.modules.map(function (m) { return m.y0; }).filter(function (v) { return v > 6; });
+    let anaUst;
+    if (ustY0.length) {
+      anaUst = Math.min.apply(null, ustY0);
+    } else {
+      const topCounts = {};
+      LG.modules.forEach(function (m) { topCounts[m.y1] = (topCounts[m.y1] || 0) + 1; });
+      let anaN = 0;
+      Object.keys(topCounts).forEach(function (k) {
+        if (topCounts[k] > anaN || (topCounts[k] === anaN && +k < anaUst)) { anaN = topCounts[k]; anaUst = +k; }
+      });
+    }
+    const ustVar = ustY0.length > 0;
+    modOut = LG.modules.slice().sort(function (a, b) {
+      return (+a.name.slice(1)) - (+b.name.slice(1));
+    }).map(function (m) {
+      const ch = chainByName[m.name];
+      let deck = null;
+      if (ustVar) {
+        if (m.y0 >= anaUst - 6) deck = 'üst kat';
+        else if (m.y1 > anaUst + 6) deck = 'her iki kat';
+        else deck = 'alt kat';
+      }
+      return {
+        name: m.name, type: m.type, en: W, boy: m.boy, yukseklik: m.yuk, deck: deck,
+        x0: m.x0, x1: m.x1, y0: m.y0, y1: m.y1,
+        kaynak: m.xSrc + '/' + m.ySrc,
+        votes: ch ? ch.votes : '', all: ch ? ch.all : {},
+        zincirBoy: ch ? ch.boy : null
+      };
+    });
+    // Kat yükseklikleri: ana kat + (varsa) üstündeki kat
+    const ustler = modOut.filter(function (m) { return m.deck === 'üst kat'; });
+    deckHeightsOut = ustler.length
+      ? [anaUst, Math.max.apply(null, ustler.map(function (m) { return m.y1; })) - anaUst]
+      : [anaUst];
+  }
+
+  // ---------- HÜCRE ÇIKARIMI ----------
+  // Yan görünüş kutuları. Katman bilgisi varsa görünüş bölgesi ondan kesin bilinir;
+  // aksi hâlde plan (Alt/Üst) görünüşü yan görünüş sanılabiliyordu — DES ailesinde
+  // hücre zinciri oradan okunduğu için santral tek blok görünüyordu.
+  const sideBoxes = boxes.filter(function (b) {
+    if (LG) {
+      if (b.yhi < LG.casingBottom - 5 || b.ylo > LG.yTop + 20) return false;
+      if (b.xhi < LG.unitLo - 20 || b.xlo > LG.unitHi + 20) return false;
+    } else if (!(bandY != null && b.ylo - 20 <= bandY && bandY <= b.yhi)) return false;
+    const span = (b.extHi - b.extLo) * 10;
+    if (W && span <= W * 1.3) return false;
+    return b.groups && b.groups.length;
+  });
+  function segRuns(segs) {
+    const runs = [];
+    const sorted = segs.slice().sort(function (a, b) { return a.lo - b.lo; });
+    for (let i = 0; i < sorted.length; i++) {
+      const last = runs[runs.length - 1];
+      if (last && sorted[i].lo - last[1] <= 2) { if (sorted[i].hi > last[1]) last[1] = sorted[i].hi; }
+      else runs.push([sorted[i].lo, sorted[i].hi]);
+    }
+    return runs;
+  }
+
+  function hucreForBox(box) {
+    const inBox = recs.filter(function (r) { return r.box === box; });
+    if (!inBox.length) return null;
+    const perDeck = [];
+    let viewRange = null; // alt katın (bu görünüşteki) x aralığı; üst kat buna kırpılır
+    for (let d = 0; d < nDecks; d++) {
+      const dRecs = inBox.filter(function (r) { return (nDecks === 1 ? true : r.deck === d); });
+      const nonEs = dRecs.filter(function (r) { return !isEsanjor(r.name); });
+      const useRecs = nonEs.length ? nonEs : dRecs;
+      if (!useRecs.length) { perDeck.push(null); continue; }
+      const modeY = +mode(useRecs.map(function (r) { return r.gy; }));
+      const grp = box.groups.filter(function (g) { return g.y === modeY; })[0];
+      if (!grp) { perDeck.push(null); continue; }
+      // modül zincirini bitişik koşulara (run) ayır — aynı kutuda birleşmiş Sağ/Sol görünüşleri ayırt et
+      const runs = segRuns(grp.segs);
+      // en çok etiket içeren koşu = bu görünüşteki kat gövdesi
+      let bestRun = runs[0], bestN = -1;
+      for (let i = 0; i < runs.length; i++) {
+        const n = dRecs.filter(function (r) {
+          const mid = (r.lo + r.hi) / 2;
+          return mid >= runs[i][0] - 2 && mid <= runs[i][1] + 2;
+        }).length;
+        if (n > bestN) { bestN = n; bestRun = runs[i]; }
+      }
+      if (!bestRun) { perDeck.push(null); continue; }
+      let extLo = bestRun[0], extHi = bestRun[1];
+      // bitişik parçaları (etiket aralıkları + diğer koşular) kademeli olarak yut (ör. eşanjör boşluğu köprüsü)
+      const pieces = runs.slice();
+      for (let i = 0; i < dRecs.length; i++) {
+        if (dRecs[i].lo != null) pieces.push([dRecs[i].lo, dRecs[i].hi]);
+      }
+      let grew = true;
+      while (grew) {
+        grew = false;
+        for (let i = 0; i < pieces.length; i++) {
+          const p = pieces[i];
+          if (p[1] < extLo - 2 || p[0] > extHi + 2) continue; // temas etmiyor
+          if (p[0] < extLo - 0.5) { extLo = p[0]; grew = true; }
+          if (p[1] > extHi + 0.5) { extHi = p[1]; grew = true; }
+        }
+      }
+      if (d === 0) {
+        // alt katı, aynı görünüşteki toplam/ara-toplam koşusuyla sınırla
+        const center = (bestRun[0] + bestRun[1]) / 2;
+        let widest = null;
+        const lower = box.groups.filter(function (g) { return g.y < modeY - 1; });
+        for (let i = 0; i < lower.length; i++) {
+          const lruns = segRuns(lower[i].segs);
+          for (let j = 0; j < lruns.length; j++) {
+            if (lruns[j][0] - 2 <= center && center <= lruns[j][1] + 2) {
+              if (!widest || (lruns[j][1] - lruns[j][0]) > (widest[1] - widest[0])) widest = lruns[j];
+            }
+          }
+        }
+        if (widest) {
+          extLo = Math.max(extLo, widest[0] - 2);
+          extHi = Math.min(extHi, widest[1] + 2);
+          extLo = Math.min(extLo, bestRun[0]); extHi = Math.max(extHi, bestRun[1]);
+        }
+        viewRange = [extLo - 2, extHi + 2];
+      } else if (viewRange) {
+        // üst kat alt katın aralığı dışına taşamaz
+        extLo = Math.max(extLo, viewRange[0]);
+        extHi = Math.min(extHi, viewRange[1]);
+        if (extHi - extLo < 4) { perDeck.push(null); continue; }
+      }
+      // hücre zinciri: kat zincirinin dışındaki bir sonraki seviye
+      let candGroups;
+      if (nDecks > 1 && d === nDecks - 1) {
+        candGroups = box.groups.filter(function (g) {
+          return g.y > modeY + 1 && g.segs.some(function (s) { return s.hi - s.lo >= 15; });
+        }).sort(function (a, b) { return a.y - b.y; });
+      } else {
+        candGroups = box.groups.filter(function (g) {
+          return g.y < modeY - 1 && g.segs.some(function (s) { return s.hi - s.lo >= 15; });
+        }).sort(function (a, b) { return b.y - a.y; });
+      }
+      let cells = [];
+      const spanExt = extHi - extLo;
+      const cand = candGroups[0];
+      if (!cand) {
+        cells.push({ lo: extLo, hi: extHi, src: 'fill' });
+      } else if (cand.segs.length === 1 && (cand.segs[0].hi - cand.segs[0].lo) >= 0.9 * spanExt) {
+        cells.push({ lo: cand.segs[0].lo, hi: cand.segs[0].hi, src: 'seg' });
+      } else {
+        // ara toplam zinciri + boşluk doldurma (kat aralığına kırpılmış)
+        let segsIn = cand.segs.filter(function (s) { return s.hi > extLo + 1 && s.lo < extHi - 1; })
+          .map(function (s) { return { lo: Math.max(s.lo, extLo), hi: Math.min(s.hi, extHi) }; })
+          .filter(function (s) { return s.hi - s.lo >= 4; });
+        // Aynı satırda hem TOPLAM hem ARA TOPLAM çizilmiş olabilir (DES ailesi: 3500 ve 1800
+        // aynı y'de). Başka bir ölçüyü tümüyle kapsayan ölçü hücre sınırı değil toplamdır.
+        segsIn = segsIn.filter(function (s) {
+          return !segsIn.some(function (o) {
+            return o !== s && o.lo >= s.lo - 1 && o.hi <= s.hi + 1 && (o.hi - o.lo) < (s.hi - s.lo) - 1;
+          });
+        });
+        for (let i = 0; i < segsIn.length; i++) cells.push({ lo: segsIn[i].lo, hi: segsIn[i].hi, src: 'seg' });
+        // boşluklar
+        const evs = [extLo];
+        segsIn.sort(function (a, b) { return a.lo - b.lo; });
+        for (let i = 0; i < segsIn.length; i++) { evs.push(segsIn[i].lo); evs.push(segsIn[i].hi); }
+        evs.push(extHi);
+        evs.sort(function (a, b) { return a - b; });
+        for (let i = 0; i + 1 < evs.length; i += 1) {
+          const glo = evs[i], ghi = evs[i + 1];
+          const mid = (glo + ghi) / 2;
+          const covered = segsIn.some(function (s) { return mid > s.lo && mid < s.hi; });
+          if (!covered && ghi - glo >= 4) cells.push({ lo: glo, hi: ghi, src: 'fill' });
+        }
+        // dedupe/sırala
+        cells.sort(function (a, b) { return a.lo - b.lo; });
+        const ded = [];
+        for (let i = 0; i < cells.length; i++) {
+          const last = ded[ded.length - 1];
+          if (last && cells[i].lo < last.hi - 1) continue;
+          ded.push(cells[i]);
+        }
+        cells = ded;
+      }
+      perDeck.push(cells);
+    }
+    // dolgu kaynaklı (çizimde ara-toplam ölçüsü olmayan) hücreleri karşı katın hücre sınırlarında böl:
+    // ör. üst katta tek parça görünen uzantı, alt katın blok sınırında ikiye ayrılır
+    function splitFillCells(cells, otherCells) {
+      if (!cells || !otherCells || !otherCells.length) return cells;
+      const edges = [];
+      otherCells.forEach(function (c) { edges.push(c.lo); edges.push(c.hi); });
+      edges.sort(function (a, b) { return a - b; });
+      const out2 = [];
+      cells.forEach(function (c) {
+        if (c.src !== 'fill') { out2.push(c); return; }
+        const parts = [{ lo: c.lo, hi: c.hi, src: 'fill' }];
+        edges.forEach(function (e) {
+          const p = parts[parts.length - 1];
+          if (e > p.lo + 4 && e < p.hi - 4) {
+            parts[parts.length - 1] = { lo: p.lo, hi: e, src: 'fill' };
+            parts.push({ lo: e, hi: p.hi, src: 'fill' });
+          }
+        });
+        out2.push.apply(out2, parts);
+      });
+      return out2;
+    }
+
+    // eşanjör bloklarını tam yükseklik hücreye birleştir
+    const esRanges = inBox.filter(function (r) { return isEsanjor(r.name) && r.lo != null; })
+      .map(function (r) { return [r.lo, r.hi]; });
+    const out = [];
+    const used1 = [];
+    let cells0 = perDeck[0] || [], cells1 = nDecks > 1 ? (perDeck[1] || []) : [];
+    cells1 = splitFillCells(cells1, cells0);
+    cells0 = splitFillCells(cells0, cells1);
+    for (let i = 0; i < cells0.length; i++) {
+      const c0 = cells0[i];
+      let merged = false;
+      for (let j = 0; j < cells1.length; j++) {
+        const c1 = cells1[j];
+        if (Math.abs(c0.lo - c1.lo) < 3 && Math.abs(c0.hi - c1.hi) < 3) {
+          const hasEs = esRanges.some(function (er) {
+            return er[0] < c0.hi - 1 && er[1] > c0.lo + 1;
+          });
+          if (hasEs) {
+            out.push({ lo: c0.lo, hi: c0.hi, kat: 'tam', h: deckHeights.reduce(function (a, b) { return a + b; }, 0) });
+            used1.push(j); merged = true; break;
+          }
+        }
+      }
+      if (!merged) out.push({ lo: c0.lo, hi: c0.hi, kat: nDecks === 1 ? 'tek' : 'alt', h: deckHeights[0] });
+    }
+    for (let j = 0; j < cells1.length; j++) {
+      if (used1.indexOf(j) >= 0) continue;
+      out.push({ lo: cells1[j].lo, hi: cells1[j].hi, kat: 'üst', h: deckHeights[nDecks - 1] });
+    }
+    out.sort(function (a, b) { return a.lo - b.lo || (a.kat === 'üst' ? 1 : -1); });
+    // hücre içindeki modüller
+    const seen = {};
+    for (let i = 0; i < out.length; i++) {
+      const c = out[i];
+      c.boy = Math.round((c.hi - c.lo) * 10);
+      c.moduller = [];
+    }
+    inBox.forEach(function (r) {
+      if (seen[r.name]) return;
+      const mid = (r.lo + r.hi) / 2;
+      // yalnızca hücre aralığındaki etiketler (ayna görünüşteki kopyaları atla)
+      const inAny = out.some(function (c) { return mid > c.lo - 2 && mid < c.hi + 2; });
+      if (!inAny) return;
+      seen[r.name] = true;
+      for (let i = 0; i < out.length; i++) {
+        const c = out[i];
+        if (mid > c.lo && mid < c.hi) {
+          const dOk = c.kat === 'tam' || c.kat === 'tek' ||
+            (c.kat === 'alt' && (r.deck === 0 || r.deck == null)) ||
+            (c.kat === 'üst' && r.deck === nDecks - 1);
+          if (dOk || isEsanjor(r.name)) { c.moduller.push(r.name); break; }
+        }
+      }
+    });
+    for (let i = 0; i < out.length; i++) {
+      out[i].moduller.sort(function (a, b) { return +a.slice(1) - +b.slice(1); });
+    }
+    return { box: box, cells: out, nLabels: inBox.length };
+  }
+
+  let hucre = null, mirrorMismatch = null;
+  const hucreAll = sideBoxes.map(hucreForBox).filter(Boolean);
+  if (hucreAll.length) {
+    hucreAll.sort(function (a, b) { return b.nLabels - a.nLabels; });
+    hucre = hucreAll[0];
+    // ayna görünüş tutarlılığı: yeterli etiketi olan diğer yan görünüşler aynı hücre imzasını vermeli
+    function sig(h) { return h.cells.map(function (c) { return c.kat + ':' + c.boy; }).sort().join(' | '); }
+    const s0 = sig(hucre);
+    for (let i = 1; i < hucreAll.length; i++) {
+      if (hucreAll[i].nLabels < hucre.nLabels * 0.7) continue;
+      if (sig(hucreAll[i]) !== s0) { mirrorMismatch = sig(hucreAll[i]) + '  ≠  ' + s0; break; }
+    }
+  }
+  // Hücre yüksekliği: içindeki modüllerin gerçek üst sınırı (katmandan). Böylece komşusundan
+  // yüksek bir gövde (DES plakalı eşanjörü) hücreyi de doğru yükseltir.
+  const lgByName = {};
+  if (LG) LG.modules.forEach(function (m) { lgByName[m.name] = m; });
+
+  // Modül→hücre ataması katman geometrisinden yapılır (kesin x aralıkları). Hücre zinciri
+  // Sağ ya da Sol görünüşten çözülmüş olabilir; iki yön de denenip modül sınırları hücre
+  // sınırlarıyla çakışan (modül bölmeyen) yön seçilir.
+  let lgCellMods = null;
+  if (LG && hucre && hucre.cells.length && modOut.length) {
+    const cLo = Math.min.apply(null, hucre.cells.map(function (c) { return c.lo; }));
+    const cHi = Math.max.apply(null, hucre.cells.map(function (c) { return c.hi; }));
+    const deckOf = {};
+    modOut.forEach(function (m) { deckOf[m.name] = m.deck; });
+    const dene = function (ayna) {
+      const res = hucre.cells.map(function () { return []; });
+      let bolunen = 0;
+      LG.modules.forEach(function (m) {
+        const lo = ayna ? cHi - m.x1 / 10 : cLo + m.x0 / 10;
+        const hi = ayna ? cHi - m.x0 / 10 : cLo + m.x1 / 10;
+        hucre.cells.forEach(function (c) {
+          if (lo < c.hi - 1 && hi > c.hi + 1) bolunen++;
+        });
+        const mid = (lo + hi) / 2, dk = deckOf[m.name];
+        for (let i = 0; i < hucre.cells.length; i++) {
+          const c = hucre.cells[i];
+          if (!(mid > c.lo && mid < c.hi)) continue;
+          const uyum = (c.kat === 'tam' || c.kat === 'tek') ? true
+            : c.kat === 'alt' ? (dk !== 'üst kat')
+            : c.kat === 'üst' ? (dk === 'üst kat' || dk === 'her iki kat') : true;
+          if (!uyum) continue;
+          res[i].push(m.name);
+          break;
+        }
+      });
+      return { res: res, bolunen: bolunen };
+    };
+    const d0 = dene(false), d1 = dene(true);
+    const iyi = d1.bolunen < d0.bolunen ? d1 : d0;
+    const atanan = iyi.res.reduce(function (a, l) { return a + l.length; }, 0);
+    if (atanan === LG.modules.length) {
+      lgCellMods = iyi.res.map(function (l) {
+        return l.sort(function (a, b) { return (+a.slice(1)) - (+b.slice(1)); });
+      });
+    }
+  }
+
+  // Bir sevkiyat bloğu KADEMELİ olabilir: DES ailesinde plakalı eşanjör gövdesi komşusundan
+  // yüksektir ve blok boyunca yükseklik değişir. Blok tek satırda en yüksek ölçüsüyle
+  // gösterilirse alçak kısım da o yükseklikte sanılır; bu yüzden blok, yüksekliğin sabit
+  // kaldığı kısımlara bölünerek listelenir (kısım no ile aynı blokta olduğu görülür).
+  function katAdiVer(y0, y1) {
+    if (deckHeightsOut.length > 1) {
+      return y0 > 0 ? 'Üst kat' : (y1 > deckHeightsOut[0] + 6 ? 'Alt+Üst (tam yükseklik)' : 'Alt kat');
+    }
+    return y1 > deckHeightsOut[0] + 6 ? 'Tek kat (taşan gövde)' : 'Tek kat';
+  }
+  const hucreler = [];
+  if (hucre) {
+    hucre.cells.forEach(function (c, i) {
+      const adlar = lgCellMods ? lgCellMods[i] : c.moduller;
+      const içi = LG ? adlar.map(function (n) { return lgByName[n]; }).filter(Boolean) : [];
+      if (!içi.length) {
+        hucreler.push({ sira: hucreler.length + 1, blok: i + 1, kisim: null,
+          kat: c.kat === 'tam' ? 'Alt+Üst (tam yükseklik)' : c.kat === 'tek' ? 'Tek kat'
+            : c.kat === 'alt' ? 'Alt kat' : 'Üst kat',
+          en: W, boy: c.boy, yukseklik: c.h, alan: m2(W * c.boy),
+          moduller: adlar.join(', ') });
+        return;
+      }
+      // blok boyunca yükseklik profili
+      const sinir = [];
+      içi.forEach(function (m) {
+        [m.x0, m.x1].forEach(function (v) {
+          if (!sinir.some(function (s) { return Math.abs(s - v) < 2; })) sinir.push(v);
+        });
+      });
+      sinir.sort(function (a, b) { return a - b; });
+      const kisimlar = [];
+      for (let k = 0; k + 1 < sinir.length; k++) {
+        const a = sinir[k], b = sinir[k + 1];
+        const örten = içi.filter(function (m) { return m.x0 <= a + 2 && m.x1 >= b - 2; });
+        if (!örten.length) continue;
+        const y0 = Math.min.apply(null, örten.map(function (m) { return m.y0; }));
+        const y1 = Math.max.apply(null, örten.map(function (m) { return m.y1; }));
+        const son = kisimlar[kisimlar.length - 1];
+        if (son && son.y0 === y0 && son.y1 === y1 && Math.abs(son.b - a) < 2) son.b = b;
+        else kisimlar.push({ a: a, b: b, y0: y0, y1: y1 });
+      }
+      kisimlar.forEach(function (p, ki) {
+        const mods = içi.filter(function (m) {
+          const mid = (m.x0 + m.x1) / 2;
+          return mid > p.a - 2 && mid < p.b + 2;
+        }).map(function (m) { return m.name; })
+          .sort(function (x, y) { return (+x.slice(1)) - (+y.slice(1)); });
+        hucreler.push({
+          sira: hucreler.length + 1, blok: i + 1,
+          kisim: kisimlar.length > 1 ? (ki + 1) + '/' + kisimlar.length : null,
+          kat: katAdiVer(p.y0, p.y1), en: W, boy: p.b - p.a, yukseklik: p.y1 - p.y0,
+          alan: m2(W * (p.b - p.a)),
+          moduller: mods.join(', ')
+        });
+      });
+    });
+  }
+
+  // ---------- MODÜL YERLEŞİMİ ----------
+  // Her modülün hava akışı doğrultusundaki x aralığı ve kendi y aralığı (kasa tabanı = 0).
+  // Katman geometrisi varsa doğrudan oradan gelir — modüllerin hepsine aynı kat yüksekliğini
+  // varsaymaz. Yoksa zincir okumasından kurulur.
+  const TOLX = 25; // mm — komşuluk (öpüşme) toleransı
+  const layout = [];
+  if (LG && W) {
+    modOut.forEach(function (m) {
+      if (m.x0 == null) return;
+      layout.push({ name: m.name, type: m.type, x0: m.x0, x1: m.x1, y0: m.y0, y1: m.y1, boy: m.boy });
+    });
+  } else if (hucre && W && modOut.length) {
+    const lbox = hucre.box;
+    const inBox = recs.filter(function (r) { return r.box === lbox && r.lo != null; });
+    if (inBox.length) {
+      const viewLo = Math.min.apply(null, inBox.map(function (r) { return r.lo; }));
+      // aynı modülün ayna/kat kopyaları olabilir — en sık geçen (lo,hi) çifti alınır
+      const byName = {};
+      inBox.forEach(function (r) {
+        const key = Math.round(r.lo * 10) + ':' + Math.round(r.hi * 10);
+        if (!byName[r.name]) byName[r.name] = {};
+        byName[r.name][key] = (byName[r.name][key] || 0) + 1;
+      });
+      const toplamH = deckHeights.reduce(function (a, b) { return a + b; }, 0);
+      modOut.forEach(function (m) {
+        const cand = byName[m.name];
+        if (!cand) return;
+        let best = null, bestN = 0;
+        Object.keys(cand).forEach(function (k) {
+          if (cand[k] > bestN) { bestN = cand[k]; best = k; }
+        });
+        const p = best.split(':');
+        const x0 = Math.round((+p[0] / 10 - viewLo) * 10);
+        const x1 = Math.round((+p[1] / 10 - viewLo) * 10);
+        let y0 = 0, y1 = deckHeights[0] || 0;
+        if (nDecks > 1) {
+          if (m.deck === 'üst kat') { y0 = deckHeights[0]; y1 = toplamH; }
+          else if (m.deck === 'her iki kat') { y0 = 0; y1 = toplamH; }
+        }
+        layout.push({ name: m.name, type: m.type, x0: x0, x1: x1, y0: y0, y1: y1, boy: m.boy });
+      });
+    }
+  }
+  // yerleşimden okunan uzunluk, modül tablosundaki boy ile tutmalı
+  const layoutSapma = layout.filter(function (m) { return Math.abs((m.x1 - m.x0) - m.boy) > TOLX; })
+    .map(function (m) { return m.name + ' (' + (m.x1 - m.x0) + '≠' + m.boy + ')'; });
+  // katman boyu ile ölçü zincirinden gelen boy birbirini doğrulamalı
+  const zincirSapma = modOut.filter(function (m) {
+    return m.zincirBoy != null && Math.abs(m.zincirBoy - m.boy) > TOLX;
+  }).map(function (m) { return m.name + ' (katman ' + m.boy + ' ≠ zincir ' + m.zincirBoy + ')'; });
+
+  // ---------- MALZEME LİSTESİ ----------
+  // İş emri uygulamasıyla aynı kurallar: fan → PLUG FAN + ELEKTRİK MOTORU (kendinden
+  // motorlu hariç), filtre → katalog adı (G4 KABA FİLTRE, F7 TORBA FİLTRE...), eşanjör,
+  // batarya, susturucu, nemlendirici; ek olarak damper bağlantıları.
+  function trU(s) { return String(s || '').toLocaleUpperCase('tr-TR').trim(); }
+  function numTr(s) {
+    const m = String(s || '').replace(/\./g, '').replace(/,/g, '.').match(/-?\d+(\.\d+)?/);
+    return m ? parseFloat(m[0]) : null;
+  }
+  // tüm tablo satırları: etiket → değer (aynı satırda sağındaki metin)
+  function rowValue(lt) {
+    let val = null;
+    for (let j = 0; j < texts.length; j++) {
+      const t = texts[j];
+      if (Math.abs(t.y - lt.y) < 3 && t.x > lt.x + 10 && (!val || t.x < val.x)) val = t;
+    }
+    return val ? val.str : '';
+  }
+  const modFields = {};   // Mx -> { alanAdı: değer }
+  const genelFields = {}; // "Taze Hava - Taze Hava - Bağlantı Tipi" gibi genel satırlar
+  for (let i = 0; i < texts.length; i++) {
+    const lt = texts[i];
+    const mm = lt.str.match(/^\((M\d+)\)\s*-\s*(.+)$/);
+    if (mm) {
+      const name = mm[1];
+      const type = modTypes[name] || '';
+      let field = mm[2];
+      if (type && field.indexOf(type + ' - ') === 0) field = field.slice(type.length + 3);
+      if (!modFields[name]) modFields[name] = {};
+      if (!(field in modFields[name])) modFields[name][field] = rowValue(lt);
+    } else if (/^(Taze Hava|Dönüş Havası|Karışım|Egzost Havası|Atış Havası) - .+/.test(lt.str)) {
+      if (!(lt.str in genelFields)) genelFields[lt.str] = rowValue(lt);
+    }
+  }
+
+  function filtreKatalogAdi(ad, tip) {
+    const m = String(ad || '').match(/([A-Za-zÇĞİÖŞÜ]+)\s*-?\s*(\d+)/);
+    const kod = m ? trU(m[1]) + m[2] : null;
+    const tipU = trU(tip);
+    if (trU(ad).indexOf('METAL') >= 0) return kod ? kod + ' METAL FİLTRE' : 'METAL FİLTRE';
+    if (kod === 'G4') return 'G4 KABA FİLTRE';
+    if (kod) return kod + (tipU ? ' ' + tipU : '') + ' FİLTRE';
+    return trU(ad + (tip ? ' (' + tip + ')' : '')) || 'FİLTRE';
+  }
+
+  const malzemeRaw = [];
+  function pushM(malzeme, ozellik, yer, miktar, kaynak) {
+    if (!malzeme) return;
+    malzemeRaw.push({ malzeme: malzeme, ozellik: String(ozellik || '').trim(),
+      yer: String(yer || '').trim(), miktar: miktar == null ? 1 : miktar, kaynak: kaynak || '' });
+  }
+
+  Object.keys(modFields).forEach(function (name) {
+    const type = modTypes[name] || '';
+    const tl = type.toLocaleLowerCase('tr-TR');
+    const F = modFields[name];
+    const get = function (k) { return (F[k] || '').trim(); };
+    if (tl.indexOf('fan') >= 0) {
+      const ad = get('Fan Adı') || get('Fan Tipi');
+      const islev = get('Fan İşlevi');
+      const sayi = numTr(get('Fan Sayısı')) || 1;
+      const fanMalzeme = /plug/i.test(get('Fan Tipi') + ' ' + ad) ? 'PLUG FAN' : 'FAN';
+      pushM(fanMalzeme, ad, islev, sayi, name);
+      const adL = ad.toLocaleLowerCase('tr-TR');
+      if (!(adL.indexOf('motorlu') >= 0 || adL.indexOf('(ec)') >= 0)) {
+        const guc = get('Güç'), devir = get('Devir (d/d)');
+        const mot = get('Motor Adı');
+        pushM('ELEKTRİK MOTORU', [mot, [guc, devir ? devir + ' d/d' : ''].filter(Boolean).join(' - ')]
+          .filter(Boolean).join(' — '), islev, sayi, name);
+      }
+      // kayış kasnaklı fan: kasnak çapı alanları varsa kasnak + kayış kalemleri açılır
+      const fanKasnak = get('Fan Kasnak Çapı (mm)'), motorKasnak = get('Motor Kasnak Çapı (mm)');
+      if (fanKasnak) pushM('FAN KASNAK', 'Ø' + fanKasnak, islev, sayi, name);
+      if (motorKasnak) pushM('MOTOR KASNAK', 'Ø' + motorKasnak, islev, sayi, name);
+      if (get('Kayış Uzunluğu')) pushM('KAYIŞ', get('Kayış Uzunluğu') + (get('Kasnak Adı') ? ' — ' + get('Kasnak Adı') : ''), islev, sayi, name);
+    } else if (tl.indexOf('eşanjör') >= 0) {
+      const rotor = tl.indexOf('rotor') >= 0;
+      const referans = get('Referans');
+      const kisKap = get('Kış - Kapasite') || get('Kapasite');
+      pushM(rotor ? 'ROTORLU EŞANJÖR' : 'PLAKALI EŞANJÖR',
+        [referans, kisKap ? '(Kış ' + kisKap + ')' : ''].filter(Boolean).join(' '), '', 1, name);
+    } else if (tl.indexOf('elektrik') >= 0) {
+      pushM('ELEKTRİKLİ ISITICI', get('Kapasite'), '', numTr(get('Adet')) || 1, name);
+    } else if (tl.indexOf('batarya') >= 0) {
+      const tGir = get('Akışkan Giriş Sıcaklığı'), tCik = get('Akışkan Çıkış Sıcaklığı');
+      const sic = tGir && tCik ? (numTr(tGir) + '/' + numTr(tCik) + ' °C') : '';
+      const akiskan = [get('Akışkan Türü'), sic ? '(' + sic + ')' : ''].filter(Boolean).join(' ');
+      const adet = (numTr(get('Dikey Adet')) || 1) * (numTr(get('Yatay Adet')) || 1);
+      pushM(trU(type), [get('Notasyon'), akiskan, get('Kapasite')].filter(Boolean).join(' — '), '', adet, name);
+    } else if (tl.indexOf('filtre') >= 0) {
+      const onEkler = [];
+      Object.keys(F).forEach(function (k) {
+        const m = k.match(/^(\d+\.\s*Filtre)\s*-\s*/);
+        if (m && onEkler.indexOf(m[1]) < 0) onEkler.push(m[1]);
+      });
+      (onEkler.length ? onEkler : [null]).forEach(function (onEk) {
+        const al = function (k) { return get(onEk ? onEk + ' - ' + k : k); };
+        const ad = al('Filtre Adı'), tip = al('Filtre Tipi');
+        const kal = numTr(al('Kalınlık (mm)'));
+        const kalem = filtreKatalogAdi(ad, tip);
+        let herhangi = false;
+        for (let n = 1; n <= 8; n++) {
+          const w = numTr(al('Genişlik(' + n + ')')), h = numTr(al('Yükseklik(' + n + ')'));
+          const a = numTr(al('Adet(' + n + ')'));
+          if (w == null && h == null && a == null) continue;
+          herhangi = true;
+          const dims = [w, h, kal].filter(function (v) { return v != null; }).join('x');
+          pushM(kalem, dims ? dims + ' mm' : '', '', a || 1, name);
+        }
+        if (!herhangi) pushM(kalem, kal != null ? kal + ' mm' : '', '', numTr(al('Adet')) || 1, name);
+      });
+    } else if (tl.indexOf('susturucu') >= 0) {
+      const not = get('Notasyon');
+      const oz = not || [get('Kalınlık') ? 'kalınlık ' + get('Kalınlık') : '',
+        get('Uzunluk') ? 'uzunluk ' + get('Uzunluk') : '', get('Hatve') ? 'hatve ' + get('Hatve') : '']
+        .filter(Boolean).join(', ');
+      pushM('SUSTURUCU', oz, '', numTr(get('Adet')) || 1, name);
+    } else if (tl.indexOf('nemlendirici') >= 0) {
+      pushM('BUHARLI NEMLENDİRİCİ', get('Kapasite'), '', 1, name);
+    }
+    // modül içi damper bağlantıları (ör. Üç Bağlantılı Karışım)
+    Object.keys(F).forEach(function (k) {
+      const m = k.match(/^(.+) - Bağlantı Tipi$/);
+      if (!m) return;
+      const val = F[k] || '';
+      if (!/damper/i.test(val)) return;
+      const w = numTr(get(m[1] + ' - Genişlik')), h = numTr(get(m[1] + ' - Yükseklik'));
+      pushM('DAMPER', [(w != null && h != null) ? w + 'x' + h + ' mm' : '', val]
+        .filter(Boolean).join(' — '), m[1], 1, name);
+    });
+  });
+  // genel (santral giriş/çıkış) damperleri
+  Object.keys(genelFields).forEach(function (k) {
+    const m = k.match(/^(.+?) - (.+) - Bağlantı Tipi$/);
+    if (!m) return;
+    const val = genelFields[k] || '';
+    if (!/damper/i.test(val)) return;
+    const w = numTr(genelFields[m[1] + ' - ' + m[2] + ' - Genişlik']);
+    const h = numTr(genelFields[m[1] + ' - ' + m[2] + ' - Yükseklik']);
+    const kontrol = genelFields[m[1] + ' - Damper Kontrol Tipi'] || '';
+    pushM('DAMPER', [(w != null && h != null) ? w + 'x' + h + ' mm' : '', val,
+      /motor/i.test(kontrol) ? 'Motorlu' : ''].filter(Boolean).join(' — '), m[2], 1, '');
+  });
+  // aynı malzeme + özellik satırlarını birleştir (miktar toplanır)
+  const malzemeMap = {};
+  const malzemeler = [];
+  malzemeRaw.forEach(function (r) {
+    const key = r.malzeme + '||' + r.ozellik;
+    if (malzemeMap[key]) {
+      malzemeMap[key].miktar += r.miktar;
+      if (r.yer && malzemeMap[key].yer.indexOf(r.yer) < 0)
+        malzemeMap[key].yer += (malzemeMap[key].yer ? ', ' : '') + r.yer;
+      if (r.kaynak && malzemeMap[key].kaynak.indexOf(r.kaynak) < 0)
+        malzemeMap[key].kaynak += (malzemeMap[key].kaynak ? ', ' : '') + r.kaynak;
+    } else {
+      const o = { malzeme: r.malzeme, ozellik: r.ozellik, yer: r.yer, miktar: r.miktar, kaynak: r.kaynak };
+      malzemeMap[key] = o;
+      malzemeler.push(o);
+    }
+  });
+
+  // ---------- YÜZEY ALANI (m²) ----------
+  // Sac hesabı MODÜL MODÜL yapılır; santrala tek kutu gibi bakılmaz.
+  // Her modülde tavan, taban ve iki yan duvar tam sayılır: 2×(En×Boy) + 2×(Boy×Yükseklik).
+  // Hava akışı doğrultusundaki ön/arka yüzlerden ise YALNIZCA DIŞARI BAKAN kısım sayılır —
+  // komşu modülle öpüşen bölümde sac yoktur. Kapalı bölüm, o düzlemde temas eden komşuların
+  // dikey örtüşmesi olarak birebir bulunur; böylece kısmi temaslar da (ör. üst katın bittiği
+  // yerde tam boy eşanjörün açıkta kalan üst bölümü) doğru hesaplanır.
+  // Kanal ağzı boşlukları düşülmez; ayak/kaide dahil değildir.
+  function m2(mm2) { return Math.round(mm2 / 1e6 * 100) / 100; }
+  let areaModules = 0, areaEnds = 0, yuzeyAlani = null;
+  const yuzeyDetay = [];
+  const layoutTam = layout.length === modOut.length && !layoutSapma.length &&
+    modOut.every(function (m) { return m.boy && m.yukseklik; });
+  if (W && layoutTam) {
+    // mod'un `plane` düzlemindeki yüzünde komşularca kapatılan dikey uzunluk (mm).
+    // yon: -1 → modülün sol (x0) yüzü, +1 → sağ (x1) yüzü.
+    function kapaliUzunluk(mod, plane, yon) {
+      const segs = [];
+      layout.forEach(function (o) {
+        if (o === mod) return;
+        const temas = yon < 0 ? Math.abs(o.x1 - plane) <= TOLX : Math.abs(o.x0 - plane) <= TOLX;
+        if (!temas) return;
+        const lo = Math.max(o.y0, mod.y0), hi = Math.min(o.y1, mod.y1);
+        if (hi > lo) segs.push([lo, hi]);
+      });
+      segs.sort(function (a, b) { return a[0] - b[0]; });
+      let toplam = 0, cur = null;
+      segs.forEach(function (s) {
+        if (!cur || s[0] > cur[1]) { if (cur) toplam += cur[1] - cur[0]; cur = [s[0], s[1]]; }
+        else if (s[1] > cur[1]) cur[1] = s[1];
+      });
+      if (cur) toplam += cur[1] - cur[0];
+      return toplam;
+    }
+    layout.forEach(function (m) {
+      const L = m.x1 - m.x0, H = m.y1 - m.y0;
+      const tavanTaban = 2 * W * L;
+      const yanlar = 2 * L * H;
+      const solAcik = H - kapaliUzunluk(m, m.x0, -1);
+      const sagAcik = H - kapaliUzunluk(m, m.x1, +1);
+      const onArka = W * (solAcik + sagAcik);
+      areaModules += tavanTaban + yanlar;
+      areaEnds += onArka;
+      yuzeyDetay.push({
+        name: m.name, type: m.type, boy: L, yukseklik: H,
+        tavanTaban: m2(tavanTaban), yanlar: m2(yanlar), onArka: m2(onArka),
+        solAcik: Math.round(solAcik), sagAcik: Math.round(sagAcik),
+        toplam: m2(tavanTaban + yanlar + onArka)
+      });
+    });
+    yuzeyAlani = m2(areaModules + areaEnds);
+  }
+
+  // ---------- KANAL AĞZI AÇIKLIKLARI ----------
+  // Kanal/damper bağlantılarının olduğu yerde de sac yoktur. Açıklık kasanın hangi
+  // panelinde olursa olsun toplamdan düşüleceği için yüzünün hangisi olduğu önemli değil.
+  const kanalAcikliklari = [];
+  function pushKanal(ad, w, h) {
+    if (w == null || h == null || w <= 0 || h <= 0) return;
+    kanalAcikliklari.push({ ad: ad, en: w, yukseklik: h, alan: m2(w * h) });
+  }
+  Object.keys(genelFields).forEach(function (k) {
+    const mm = k.match(/^(.+?) - (.+) - Bağlantı Tipi$/);
+    if (!mm) return;
+    pushKanal(mm[2], numTr(genelFields[mm[1] + ' - ' + mm[2] + ' - Genişlik']),
+      numTr(genelFields[mm[1] + ' - ' + mm[2] + ' - Yükseklik']));
+  });
+  Object.keys(modFields).forEach(function (name) {
+    const F = modFields[name];
+    Object.keys(F).forEach(function (k) {
+      const mm = k.match(/^(.+) - Bağlantı Tipi$/);
+      if (!mm) return;
+      pushKanal(name + ' ' + mm[1], numTr(F[mm[1] + ' - Genişlik']), numTr(F[mm[1] + ' - Yükseklik']));
+    });
+  });
+  const kanalToplam = kanalAcikliklari.reduce(function (a, k) { return a + k.en * k.yukseklik; }, 0);
+  const yuzeyNet = yuzeyAlani == null ? null : m2(areaModules + areaEnds - kanalToplam);
+
+  // ---------- DOĞRULAMA BATARYASI ----------
+  // Her sonuç, birbirinden bağımsız kontrollerden geçer. Kritik bir kontrol çökerse sonuç
+  // "güvenilmez" (error), kritik olmayan çökerse "uyarılı" (warning) işaretlenir.
+  const checks = [];
+  function chk(name, ok, detail, critical) {
+    checks.push({ name: name, ok: !!ok, detail: detail || '', critical: !!critical });
+  }
+
+  // 1. teknik tablo okunabildi mi
+  chk('Teknik tablo (santral / genişlik / yükseklik)', kv['Santral Adı'] && W && Htab,
+    !kv['Santral Adı'] ? 'santral adı yok' : !W ? 'genişlik yok' : !Htab ? 'yükseklik yok' : '', true);
+
+  // 2. geometri: modül etiketi ve ölçü zinciri bulunabildi mi
+  chk('Modül etiketleri (M1, M2, …)', mlabels.length > 0, mlabels.length + ' etiket', true);
+  chk('Ölçü zincirleri', hsegs.length > 0, hsegs.length + ' yatay ölçü', true);
+
+  const nDecksOut = deckHeightsOut.length;
+
+  // 3. kat yüksekliği = tablo yüksekliği
+  if (Htab && deckHeightsOut.length)
+    chk('Kat yüksekliği = tablo yüksekliği', deckHeightsOut[0] === Htab,
+      deckHeightsOut[0] + ' vs ' + Htab, false);
+
+  // 4. kat toplamı çizimdeki dikey toplam ölçüsüyle eşleşmeli
+  if (nDecksOut > 1) {
+    const deckSum = deckHeightsOut.reduce(function (a, b) { return a + b; }, 0);
+    const okV = vdims.some(function (d) {
+      const v = Math.round(d.meas * 10);
+      return Math.abs(v - deckSum) < 25 || Math.abs(v - deckSum - ayak) < 25;
+    });
+    chk('Kat toplamı çizim ölçüsüyle teyit', okV, 'katlar: ' + deckHeightsOut.join('+'), false);
+  }
+
+  // 5. tabloda listelenen modüller = çizimde bulunanlar
+  const tableMods = {};
+  for (let i = 0; i < texts.length; i++) {
+    const m = texts[i].str.match(/^\((M\d+)\)\s*-/);
+    if (m) tableMods[m[1]] = true;
+  }
+  const tmKeys = Object.keys(tableMods);
+  if (tmKeys.length) {
+    const missing = tmKeys.filter(function (m) { return !modules[m]; });
+    const extra = Object.keys(modules).filter(function (m) { return !tableMods[m]; });
+    chk('Tablo modülleri = bulunan modüller', !missing.length && !extra.length,
+      (missing.length ? 'eksik: ' + missing.join(',') : '') + (extra.length ? ' fazla: ' + extra.join(',') : ''), true);
+  }
+
+  // 6. modül ölçüsü oy güveni (her modül birden çok görünüşten teyitli olmalı)
+  const lowConf = [];
+  modOut.forEach(function (m) {
+    if (!m.votes) return;
+    const p = m.votes.split('/');
+    if (+p[0] < 2 || +p[0] / +p[1] < 0.5) lowConf.push(m.name + ' (' + m.votes + ')');
+  });
+  chk('Modül ölçüleri çok görünüşten teyitli', !lowConf.length, lowConf.join(', '), false);
+
+  // 7. hücreler bulunabildi mi
+  chk('Hücre tespiti', hucreler.length > 0, hucreler.length + ' hücre', true);
+
+  // 8. alt kat hücre toplamı = çizimdeki toplam boy
+  let altSum = 0;
+  hucreler.forEach(function (h) { if (h.kat !== 'Üst kat') altSum += h.boy; });
+  if (hucreler.length && totalLen)
+    chk('Alt kat hücre toplamı = toplam boy', Math.abs(altSum - totalLen) <= 15,
+      altSum + ' vs ' + totalLen, true);
+
+  // 9. alt kat modül boyları toplamı = toplam boy (hücrelerden bağımsız ikinci yol)
+  if (totalLen && modOut.length) {
+    const altModSum = modOut.filter(function (m) { return !m.deck || m.deck === 'alt kat' || m.deck === 'her iki kat'; })
+      .reduce(function (a, m) { return a + m.boy; }, 0);
+    chk('Alt kat modül toplamı = toplam boy', Math.abs(altModSum - totalLen) <= 15,
+      altModSum + ' vs ' + totalLen, true);
+  }
+
+  // 10. üst kat modül toplamı = üst hücre toplamı
+  if (nDecksOut > 1 && hucreler.length) {
+    const ustModSum = modOut.filter(function (m) { return m.deck === 'üst kat' || m.deck === 'her iki kat'; })
+      .reduce(function (a, m) { return a + m.boy; }, 0);
+    const ustHucSum = hucreler.filter(function (h) { return h.kat === 'Üst kat' || h.kat.indexOf('Alt+Üst') === 0; })
+      .reduce(function (a, h) { return a + h.boy; }, 0);
+    chk('Üst kat modül toplamı = üst hücre toplamı', Math.abs(ustModSum - ustHucSum) <= 15,
+      ustModSum + ' vs ' + ustHucSum, false);
+  }
+
+  // 11. her modül bir hücreye atanmış olmalı
+  if (hucreler.length) {
+    const inCells = {};
+    hucreler.forEach(function (h) {
+      h.moduller.split(',').forEach(function (s) { s = s.trim(); if (s) inCells[s] = true; });
+    });
+    const unassigned = Object.keys(modules).filter(function (m) { return !inCells[m]; });
+    chk('Her modül bir hücrede', !unassigned.length, unassigned.join(', '), true);
+  }
+
+  // 12. ayna görünüş tutarlılığı (Sağ ve Sol aynı hücre imzasını vermeli)
+  if (hucreAll.length > 1)
+    chk('Ayna görünüşler aynı sonucu veriyor', !mirrorMismatch, mirrorMismatch || '', false);
+
+  // 13. modül yerleşimi: her modül konumlandırılabildi ve boyu yerleşimle tutuyor mu
+  if (modOut.length) {
+    chk('Modül yerleşimi (konum + boy tutarlı)', layout.length === modOut.length && !layoutSapma.length,
+      (layout.length !== modOut.length ? 'konumlanamayan: ' + (modOut.length - layout.length) + ' modül' : '') +
+      (layoutSapma.length ? ' sapma: ' + layoutSapma.join(', ') : ''), false);
+  }
+
+  // 14. yüzey alanı modül modül hesaplanabildi mi
+  chk('Yüzey alanı hesabı (modül modül)', yuzeyAlani != null, '', false);
+
+  // 15. modül boyu iki bağımsız kaynaktan aynı çıkmalı: katman kutusu ve ölçü zinciri
+  if (zincirSapma.length || modOut.some(function (m) { return m.zincirBoy != null; })) {
+    chk('Katman boyu = ölçü zinciri boyu', !zincirSapma.length, zincirSapma.join(', '), false);
+  }
+
+  // 16. modüller yan görünüşte boşluksuz diziliyor mu (kopuk yerleşim yüzey alanını bozar)
+  if (layout.length && totalLen) {
+    const iv = layout.map(function (m) { return [m.x0, m.x1]; }).sort(function (a, b) { return a[0] - b[0]; });
+    let kapali = 0, cur = null;
+    iv.forEach(function (s) {
+      if (!cur || s[0] > cur[1] + TOLX) { if (cur) kapali += cur[1] - cur[0]; cur = [s[0], s[1]]; }
+      else if (s[1] > cur[1]) cur[1] = s[1];
+    });
+    if (cur) kapali += cur[1] - cur[0];
+    chk('Modüller boşluksuz diziliyor', Math.abs(kapali - totalLen) <= TOLX,
+      kapali + ' vs ' + totalLen, false);
+  }
+
+  // 14. malzeme üretmesi beklenen her modül en az bir malzeme kalemi üretmiş olmalı
+  const malzemeBekleyen = Object.keys(modTypes).filter(function (n) {
+    return /fan|filtre|batarya|eşanjör|susturucu|nemlendirici|elektrik/i.test(modTypes[n]);
+  });
+  if (malzemeBekleyen.length) {
+    const uretmedi = malzemeBekleyen.filter(function (n) {
+      return !malzemeRaw.some(function (r) { return r.kaynak.indexOf(n) >= 0; });
+    });
+    chk('Her modülün malzemesi listede', !uretmedi.length, uretmedi.join(', '), false);
+  }
+
+  const failCrit = checks.filter(function (c) { return !c.ok && c.critical; });
+  const failWarn = checks.filter(function (c) { return !c.ok && !c.critical; });
+  const status = failCrit.length ? 'error' : failWarn.length ? 'warning' : 'verified';
+
+  let warn = null;
+  if (hucreler.length && totalLen && Math.abs(altSum - totalLen) > 15)
+    warn = 'Alt kat hücre toplamı (' + altSum + ') toplam boy (' + totalLen + ') ile uyuşmuyor — kontrol edin.';
+
+  return {
+    file: fileName || '',
+    santral: kv['Santral Adı'] || null,
+    proje: kv['Proje Adı'] || null,
+    model: kv['Model Adı'] || null,
+    boyut: kv['Boyut Adı'] || null,
+    debi: kv['Hava Debisi'] || null,
+    genislik: W, yukseklikTablo: Htab, ayak: ayak,
+    agirlik: kv['Ağırlık'] || null,
+    deckHeights: deckHeightsOut, totalLen: totalLen,
+    maxYukseklik: LG ? LG.maxHeight : (deckHeightsOut.reduce(function (a, b) { return a + b; }, 0)),
+    okumaKaynak: LG ? 'katman (' + LG.view + ')' : 'ölçü zinciri',
+    hucreler: hucreler,
+    modules: modOut,
+    yuzeyAlani: yuzeyAlani,
+    yuzeyModuller: m2(areaModules),
+    yuzeyUclar: m2(areaEnds),
+    yuzeyDetay: yuzeyDetay,
+    kanalAcikliklari: kanalAcikliklari,
+    yuzeyKanalToplam: m2(kanalToplam),
+    yuzeyNet: yuzeyNet,
+    status: status, checks: checks,
+    malzemeler: malzemeler,
+    warn: warn,
+    _render: { lines: P.rlines, polys: P.rpolys, texts: texts, dims: dims,
+               hucreBox: hucre ? { xlo: hucre.box.xlo, xhi: hucre.box.xhi, ylo: hucre.box.ylo, yhi: hucre.box.yhi } : null,
+               hucreCells: hucre ? hucre.cells : [], bandY: bandY, deckBounds: deckBounds }
+  };
+}
+
+const api = { analyzeDxf: analyzeDxf, parseDxf: parseDxf };
+if (typeof module !== 'undefined' && module.exports) module.exports = api;
+else global.DxfCore = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+
+
+/* --- arayüz katmanı --- */
+
+function dxfBaslat(){
+  'use strict';
+  if(window.__dxfHazir) return; 
+  if(!document.getElementById('dxf_drop')) return;
+  window.__dxfHazir=true;
+  var results = [];
+  var DXKOK=function(){ return document.getElementById('sec_dxfolcu')||document; };
+  var $ = function (s) { return document.querySelector(s); };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* ============ XLSX YAZICI ============
+     Gerçek .xlsx üretir. Dış kütüphane yok: xlsx = XML dosyalarından oluşan bir ZIP;
+     ZIP "store" (sıkıştırmasız) kipinde yazılır, o yüzden yalnızca CRC32 gerekir.
+     Böylece araç çevrimdışı tek dosya olarak kalır. */
+  var XLS = (function () {
+    var crcTab = (function () {
+      var t = new Uint32Array(256);
+      for (var n = 0; n < 256; n++) {
+        var c = n;
+        for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        t[n] = c >>> 0;
+      }
+      return t;
+    })();
+    function crc32(buf) {
+      var c = 0xFFFFFFFF;
+      for (var i = 0; i < buf.length; i++) c = crcTab[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+      return (c ^ 0xFFFFFFFF) >>> 0;
+    }
+    var enc = new TextEncoder();
+
+    // ZIP (store) paketleyici
+    function zip(files) {
+      var parts = [], central = [], offset = 0;
+      files.forEach(function (f) {
+        var name = enc.encode(f.name), data = f.data;
+        var crc = crc32(data);
+        var lh = new DataView(new ArrayBuffer(30));
+        lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true);
+        lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+        lh.setUint16(10, 0, true); lh.setUint16(12, 0x2821, true);
+        lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true);
+        lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true);
+        lh.setUint16(28, 0, true);
+        parts.push(new Uint8Array(lh.buffer), name, data);
+        var cd = new DataView(new ArrayBuffer(46));
+        cd.setUint32(0, 0x02014b50, true); cd.setUint16(4, 20, true); cd.setUint16(6, 20, true);
+        cd.setUint16(8, 0x0800, true); cd.setUint16(10, 0, true);
+        cd.setUint16(12, 0, true); cd.setUint16(14, 0x2821, true);
+        cd.setUint32(16, crc, true); cd.setUint32(20, data.length, true);
+        cd.setUint32(24, data.length, true); cd.setUint16(28, name.length, true);
+        cd.setUint16(30, 0, true); cd.setUint16(32, 0, true); cd.setUint16(34, 0, true);
+        cd.setUint16(36, 0, true); cd.setUint32(38, 0, true); cd.setUint32(42, offset, true);
+        central.push(new Uint8Array(cd.buffer), name);
+        offset += 30 + name.length + data.length;
+      });
+      var cdSize = central.reduce(function (a, p) { return a + p.length; }, 0);
+      var eo = new DataView(new ArrayBuffer(22));
+      eo.setUint32(0, 0x06054b50, true); eo.setUint16(4, 0, true); eo.setUint16(6, 0, true);
+      eo.setUint16(8, files.length, true); eo.setUint16(10, files.length, true);
+      eo.setUint32(12, cdSize, true); eo.setUint32(16, offset, true); eo.setUint16(20, 0, true);
+      var all = parts.concat(central, [new Uint8Array(eo.buffer)]);
+      var total = all.reduce(function (a, p) { return a + p.length; }, 0);
+      var out = new Uint8Array(total), pos = 0;
+      all.forEach(function (p) { out.set(p, pos); pos += p.length; });
+      return out;
+    }
+
+    function xe(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+    }
+    function colName(n) {
+      var s = '';
+      while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = (n - m - 1) / 26; }
+      return s;
+    }
+    // stil indeksleri: 1 başlık, 2 metin, 3 tamsayı, 4 ondalık, 5 kalın ondalık, 6 kalın metin
+    var STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<numFmts count="2"><numFmt numFmtId="164" formatCode="#,##0"/>' +
+      '<numFmt numFmtId="165" formatCode="#,##0.00"/></numFmts>' +
+      '<fonts count="3">' +
+      '<font><sz val="10"/><name val="Segoe UI"/></font>' +
+      '<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Segoe UI"/></font>' +
+      '<font><b/><sz val="10"/><name val="Segoe UI"/></font></fonts>' +
+      '<fills count="3"><fill><patternFill patternType="none"/></fill>' +
+      '<fill><patternFill patternType="gray125"/></fill>' +
+      '<fill><patternFill patternType="solid"><fgColor rgb="FF1F4E79"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+      '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>' +
+      '<border><left style="thin"><color rgb="FFD4DCE6"/></left><right style="thin"><color rgb="FFD4DCE6"/></right>' +
+      '<top style="thin"><color rgb="FFD4DCE6"/></top><bottom style="thin"><color rgb="FFD4DCE6"/></bottom><diagonal/></border></borders>' +
+      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+      '<cellXfs count="7">' +
+      '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+      '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>' +
+      '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>' +
+      '<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/>' +
+      '<xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/>' +
+      '<xf numFmtId="165" fontId="2" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1" applyFont="1"/>' +
+      '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+      '</cellXfs>' +
+      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+      '</styleSheet>';
+
+    function sheetXml(sh) {
+      var x = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'];
+      x.push('<sheetViews><sheetView workbookViewId="0">' +
+        (sh.freeze === false ? '' : '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>') +
+        '</sheetView></sheetViews>');
+      if (sh.widths && sh.widths.length) {
+        x.push('<cols>' + sh.widths.map(function (w, i) {
+          return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>';
+        }).join('') + '</cols>');
+      }
+      x.push('<sheetData>');
+      sh.rows.forEach(function (row, ri) {
+        x.push('<row r="' + (ri + 1) + '">');
+        row.forEach(function (c, ci) {
+          if (c == null || c === '') return;
+          var ref = colName(ci + 1) + (ri + 1);
+          var v = (c && typeof c === 'object') ? c.v : c;
+          var s = (c && typeof c === 'object' && c.s != null) ? c.s : (typeof v === 'number' ? 3 : 2);
+          if (typeof v === 'number' && isFinite(v)) {
+            x.push('<c r="' + ref + '" s="' + s + '"><v>' + v + '</v></c>');
+          } else {
+            x.push('<c r="' + ref + '" s="' + s + '" t="inlineStr"><is><t xml:space="preserve">' +
+              xe(v) + '</t></is></c>');
+          }
+        });
+        x.push('</row>');
+      });
+      x.push('</sheetData>');
+      if (sh.filter !== false && sh.rows.length > 1) {
+        x.push('<autoFilter ref="A1:' + colName(sh.rows[0].length) + sh.rows.length + '"/>');
+      }
+      x.push('</worksheet>');
+      return x.join('');
+    }
+
+    function build(sheets) {
+      var files = [];
+      var ct = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+        '<Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'];
+      var wbSheets = [], wbRels = [];
+      sheets.forEach(function (sh, i) {
+        var n = i + 1;
+        ct.push('<Override PartName="/xl/worksheets/sheet' + n + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>');
+        wbSheets.push('<sheet name="' + xe(sh.name).slice(0, 31) + '" sheetId="' + n + '" r:id="rId' + n + '"/>');
+        wbRels.push('<Relationship Id="rId' + n + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + n + '.xml"/>');
+        files.push({ name: 'xl/worksheets/sheet' + n + '.xml', data: enc.encode(sheetXml(sh)) });
+      });
+      ct.push('</Types>');
+      wbRels.push('<Relationship Id="rIdS" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>');
+      files.unshift(
+        { name: '[Content_Types].xml', data: enc.encode(ct.join('')) },
+        { name: '_rels/.rels', data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+          '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+          '</Relationships>') },
+        { name: 'xl/workbook.xml', data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
+          'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+          '<sheets>' + wbSheets.join('') + '</sheets></workbook>') },
+        { name: 'xl/_rels/workbook.xml.rels', data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+          wbRels.join('') + '</Relationships>') },
+        { name: 'xl/styles.xml', data: enc.encode(STYLES) }
+      );
+      return new Blob([zip(files)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    }
+    return { build: build, HDR: 1, TXT: 2, INT: 3, DEC: 4, DECB: 5, BOLD: 6 };
+  })();
+  function num(n) { return n == null ? '' : Number(n).toLocaleString('tr-TR'); }
+
+  function katClass(kat) {
+    if (/tam/i.test(kat)) return 'k-tam';
+    if (/Üst/i.test(kat)) return 'k-ust';
+    if (/Alt|Tek/i.test(kat)) return 'k-alt';
+    return '';
+  }
+
+  // ---------- SVG önizleme ----------
+  function buildSvg(r) {
+    var R = r._render;
+    if (!R || (!R.lines.length && !R.polys.length)) return '';
+    var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+    function acc(x, y) {
+      if (x == null || y == null) return;
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    R.lines.forEach(function (l) { acc(l[0], l[1]); acc(l[2], l[3]); });
+    R.polys.forEach(function (p) { p.pts.forEach(function (pt) { acc(pt[0], pt[1]); }); });
+    R.texts.forEach(function (t) { acc(t.x, t.y); });
+    var pad = 30; minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+    var Wv = maxX - minX, Hv = maxY - minY, scale = 2400 / Wv;
+    function tx(x) { return ((x - minX) * scale).toFixed(1); }
+    function ty(y) { return ((maxY - y) * scale).toFixed(1); }
+    var s = [];
+    s.push('<svg xmlns="http://www.w3.org/2000/svg" width="' + (Wv * scale).toFixed(0) +
+           '" height="' + (Hv * scale).toFixed(0) + '" style="background:#fff">');
+    // hücre katmanı (altta)
+    if (R.hucreCells && R.hucreCells.length && R.deckBounds) {
+      var db = R.deckBounds;
+      R.hucreCells.forEach(function (c, i) {
+        var y0, y1;
+        if (c.kat === 'üst') { y0 = db[db.length - 2]; y1 = db[db.length - 1]; }
+        else if (c.kat === 'alt' || c.kat === 'tek') { y0 = db[0]; y1 = db[1]; }
+        else { y0 = db[0]; y1 = db[db.length - 1]; }
+        var fill = c.kat === 'tam' ? 'rgba(155,81,224,.15)' : c.kat === 'üst' ? 'rgba(242,153,74,.18)' : 'rgba(47,128,237,.15)';
+        var stroke = c.kat === 'tam' ? '#9b51e0' : c.kat === 'üst' ? '#f2994a' : '#2f80ed';
+        s.push('<rect x="' + tx(c.lo) + '" y="' + ty(y1) + '" width="' + ((c.hi - c.lo) * scale).toFixed(1) +
+               '" height="' + ((y1 - y0) * scale).toFixed(1) + '" fill="' + fill + '" stroke="' + stroke +
+               '" stroke-width="2" stroke-dasharray="7,4"/>');
+        s.push('<text x="' + (((c.lo + c.hi) / 2 - minX) * scale).toFixed(1) + '" y="' + (ty((y0 + y1) / 2)) +
+               '" font-size="26" font-weight="bold" fill="' + stroke + '" text-anchor="middle" font-family="Arial">' +
+               (i + 1) + ': ' + Math.round((c.hi - c.lo) * 10) + '</text>');
+      });
+    }
+    R.lines.forEach(function (l) {
+      s.push('<line x1="' + tx(l[0]) + '" y1="' + ty(l[1]) + '" x2="' + tx(l[2]) + '" y2="' + ty(l[3]) +
+             '" stroke="#444" stroke-width="0.7"/>');
+    });
+    R.polys.forEach(function (p) {
+      var d = p.pts.map(function (pt) { return tx(pt[0]) + ',' + ty(pt[1]); }).join(' ');
+      s.push('<poly' + (p.closed ? 'gon' : 'line') + ' points="' + d + '" fill="none" stroke="#444" stroke-width="0.7"/>');
+    });
+    R.texts.forEach(function (t) {
+      if (!t.str) return;
+      var isM = /^M\d+$/.test(t.str);
+      var fs = Math.max(9, (t.h || 6) * scale);
+      s.push('<text x="' + tx(t.x) + '" y="' + ty(t.y) + '" font-size="' + fs.toFixed(1) +
+             '" fill="' + (isM ? '#d61f1f' : '#0a58ca') + '"' + (isM ? ' font-weight="bold"' : '') +
+             ' font-family="Arial">' + esc(t.str) + '</text>');
+    });
+    R.dims.forEach(function (d) {
+      if (d.meas == null || d.x13 == null || d.x14 == null) return;
+      s.push('<line x1="' + tx(d.x13) + '" y1="' + ty(d.y13) + '" x2="' + tx(d.x14) + '" y2="' + ty(d.y14) +
+             '" stroke="#1a9850" stroke-width="1" stroke-dasharray="4,3"/>');
+      var mx = (d.x13 + d.x14) / 2, my = (d.y13 + d.y14) / 2;
+      s.push('<text x="' + tx(mx) + '" y="' + ty(my) + '" font-size="13" fill="#1a9850" font-family="Arial">' +
+             (+d.meas.toFixed(1)) + '</text>');
+    });
+    s.push('</svg>');
+    return s.join('');
+  }
+
+  // ---------- tablo üretimi ----------
+  function hucreTable(r) {
+    var kademeli = r.hucreler.some(function (h) { return h.kisim; });
+    var f2 = function (v) { return v == null ? '' : v.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+    var rows = r.hucreler.map(function (h) {
+      return '<tr class="' + katClass(h.kat) + '"><td class="num">' + h.sira + '</td>' +
+        '<td class="num">' + (h.blok || h.sira) + (h.kisim ? ' <small>kısım ' + esc(h.kisim) + '</small>' : '') +
+        '</td><td>' + esc(h.kat) +
+        '</td><td class="num">' + num(h.en) + '</td><td class="num">' + num(h.boy) +
+        '</td><td class="num">' + num(h.yukseklik) + '</td><td class="num"><b>' + f2(h.alan) +
+        '</b></td><td>' + esc(h.moduller) + '</td></tr>';
+    }).join('');
+    var altSum = 0, altAlan = 0, tumAlan = 0;
+    r.hucreler.forEach(function (h) {
+      tumAlan += h.alan || 0;
+      if (!/^Üst/.test(h.kat)) { altSum += h.boy; altAlan += h.alan || 0; }
+    });
+    var ustVar = r.hucreler.some(function (h) { return /^Üst/.test(h.kat); });
+    return '<table><thead><tr><th class="num">#</th><th class="num">Sevkiyat bloğu</th><th>Kat</th>' +
+      '<th class="num">En (mm)</th>' +
+      '<th class="num">Boy (mm)</th><th class="num">Yükseklik (mm)</th>' +
+      '<th class="num">Alan En×Boy (m²)</th><th>İçindeki Modüller</th></tr></thead>' +
+      '<tbody>' + rows + '<tr class="top"><td colspan="4">Toplam (alt kat izdüşümü)</td>' +
+      '<td class="num">' + num(altSum) + '</td><td></td><td class="num"><b>' + f2(altAlan) +
+      '</b></td><td>Çizimdeki toplam boy: ' + num(r.totalLen) + '</td></tr>' +
+      (ustVar ? '<tr class="top"><td colspan="6">Tüm hücrelerin alan toplamı (üst kat dahil)</td>' +
+        '<td class="num"><b>' + f2(tumAlan) + '</b></td><td></td></tr>' : '') +
+      '</tbody></table>' +
+      (kademeli ? '<div class="hint">Kademeli blok: aynı sevkiyat bloğu içinde gövde yüksekliği değişiyor; ' +
+        'her yükseklik ayrı satırda verildi.</div>' : '');
+  }
+
+  function yuzeyTable(r) {
+    if (!r.yuzeyDetay || !r.yuzeyDetay.length) return '';
+    var f2 = function (v) { return v.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+    var tt = 0, yy = 0, oa = 0;
+    var rows = r.yuzeyDetay.map(function (d) {
+      tt += d.tavanTaban; yy += d.yanlar; oa += d.onArka;
+      var acikTxt = function (v, H) {
+        if (v <= 0) return '<span class="kapali">öpüşüyor — sac yok</span>';
+        if (v >= H) return 'tamamı açık (' + num(v) + ')';
+        return 'kısmen açık (' + num(v) + ')';
+      };
+      return '<tr><td>' + esc(d.name) + '</td><td>' + esc(d.type) + '</td>' +
+        '<td class="num">' + num(d.boy) + '</td><td class="num">' + num(d.yukseklik) + '</td>' +
+        '<td class="num">' + f2(d.tavanTaban) + '</td><td class="num">' + f2(d.yanlar) + '</td>' +
+        '<td>' + acikTxt(d.solAcik, d.yukseklik) + '</td><td>' + acikTxt(d.sagAcik, d.yukseklik) + '</td>' +
+        '<td class="num">' + f2(d.onArka) + '</td><td class="num"><b>' + f2(d.toplam) + '</b></td></tr>';
+    }).join('');
+    return '<table><thead><tr><th>Modül</th><th>Tip</th><th class="num">Boy</th><th class="num">Yük.</th>' +
+      '<th class="num">Tavan+Taban m²</th><th class="num">Yan duvarlar m²</th>' +
+      '<th>Ön yüz</th><th>Arka yüz</th><th class="num">Ön/arka m²</th><th class="num">Modül m²</th>' +
+      '</tr></thead><tbody>' + rows +
+      '<tr class="top"><td colspan="4">TOPLAM</td><td class="num">' + f2(tt) + '</td><td class="num">' + f2(yy) +
+      '</td><td colspan="2"></td><td class="num">' + f2(oa) + '</td><td class="num"><b>' +
+      f2(r.yuzeyAlani) + '</b></td></tr></tbody></table>';
+  }
+
+  function malzemeTable(r) {
+    if (!r.malzemeler || !r.malzemeler.length) return '<div class="warn">Malzeme kalemi bulunamadı.</div>';
+    var rows = r.malzemeler.map(function (m, i) {
+      return '<tr><td class="num">' + (i + 1) + '</td><td><b>' + esc(m.malzeme) + '</b></td><td>' +
+        esc(m.ozellik) + '</td><td>' + esc(m.yer) + '</td><td class="num">' + num(m.miktar) +
+        '</td><td>' + esc(m.kaynak) + '</td></tr>';
+    }).join('');
+    return '<table><thead><tr><th class="num">#</th><th>Malzeme</th><th>Özellikler</th>' +
+      '<th>Kullanım Yeri</th><th class="num">Miktar</th><th>Modül</th></tr></thead><tbody>' +
+      rows + '</tbody></table>';
+  }
+
+  function malzemeTsvFor(list) {
+    var out = ['Dosya\tSantral\tMalzeme\tÖzellikler\tKullanım Yeri\tMiktar\tModül'];
+    list.forEach(function (r) {
+      (r.malzemeler || []).forEach(function (m) {
+        out.push([r.file, r.santral, m.malzeme, m.ozellik, m.yer, m.miktar, m.kaynak].join('\t'));
+      });
+    });
+    return out.join('\r\n');
+  }
+
+  function modulTable(r) {
+    var rows = r.modules.map(function (m) {
+      var kat = m.deck ? m.deck : (r.deckHeights.length === 1 ? 'tek kat' : '');
+      var teyit = m.zincirBoy != null
+        ? (Math.abs(m.zincirBoy - m.boy) <= 25 ? 'zincir ✓' : 'zincir ' + num(m.zincirBoy) + ' ✗')
+        : (m.votes || '');
+      return '<tr><td>' + esc(m.name) + '</td><td>' + esc(m.type) + '</td><td>' + esc(kat) +
+        '</td><td class="num">' + num(m.en) + '</td><td class="num">' + num(m.boy) +
+        '</td><td class="num">' + num(m.yukseklik) + '</td><td>' + esc(m.kaynak || '') +
+        '</td><td>' + esc(teyit) + '</td></tr>';
+    }).join('');
+    return '<table><thead><tr><th>Modül</th><th>Tip</th><th>Kat</th><th class="num">En (mm)</th>' +
+      '<th class="num">Boy (mm)</th><th class="num">Yükseklik (mm)</th><th>Kaynak (boy/yük)</th>' +
+      '<th>Teyit</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function tsvFor(list) {
+    var out = ['Dosya\tSantral\tSıra\tSevkiyat Bloğu\tKısım\tKat\tEn (mm)\tBoy (mm)\tYükseklik (mm)\tAlan En×Boy (m²)\tİçindeki Modüller\tToplam Yüzey Alanı (m²)\tKanal ağzı düşülmüş (m²)\tDurum'];
+    var stTxt = { verified: 'Doğrulandı', warning: 'UYARILI', error: 'GÜVENİLMEZ' };
+    var vir = function (v) { return v == null ? '' : String(v).replace('.', ','); };
+    list.forEach(function (r) {
+      r.hucreler.forEach(function (h, i) {
+        out.push([r.file, r.santral, h.sira, h.blok || h.sira, h.kisim || '', h.kat, h.en, h.boy, h.yukseklik, vir(h.alan), h.moduller,
+          i === 0 ? vir(r.yuzeyAlani) : '', i === 0 ? vir(r.yuzeyNet) : '',
+          i === 0 ? (stTxt[r.status] || '') : ''].join('\t'));
+      });
+    });
+    return out.join('\r\n');
+  }
+
+  function render() {
+    var el = $('#dxf_res');
+    el.innerHTML = '';
+    $('#dxf_bar').style.display = results.length ? 'flex' : 'none';
+    results.forEach(function (r, idx) {
+      var card = document.createElement('div');
+      card.className = 'card';
+      if (r.error) {
+        card.innerHTML = '<div class="head"><h2>' + esc(r.file) + '</h2></div>' +
+          '<div class="body"><div class="err">Bu dosya çözümlenemedi: ' + esc(r.error) + '</div></div>';
+        el.appendChild(card);
+        return;
+      }
+      var deckSum = r.deckHeights.reduce(function (a, b) { return a + b; }, 0);
+      var kat = r.deckHeights.length === 1
+        ? 'Tek kat (' + num(r.deckHeights[0]) + ')'
+        : 'Çift kat (' + r.deckHeights.map(num).join(' + ') + ')';
+      if (r.maxYukseklik && r.maxYukseklik > deckSum + 6) {
+        kat += ', taşan gövde ' + num(r.maxYukseklik);
+      }
+      var head = '<div class="head"><h2>' + esc(r.santral || r.file) + '</h2>' +
+        '<span class="meta">Dosya: <b>' + esc(r.file) + '</b></span>' +
+        (r.debi ? '<span class="meta">Debi: <b>' + esc(r.debi) + '</b></span>' : '') +
+        (r.model ? '<span class="meta">Model: <b>' + esc(r.model) + ' ' + esc(r.boyut || '') + '</b></span>' : '') +
+        '<span class="meta">Gövde: <b>' + num(r.genislik) + ' G × ' + kat + ' Y × ' + num(r.totalLen) + ' B</b></span>' +
+        (r.agirlik ? '<span class="meta">Ağırlık: <b>' + esc(r.agirlik) + '</b></span>' : '') +
+        '<span class="meta">Ayak: <b>' + num(r.ayak) + ' mm (hariç)</b></span>' +
+        (r.okumaKaynak ? '<span class="meta">Okuma: <b>' + esc(r.okumaKaynak) + '</b></span>' : '') +
+        '</div>';
+      var body = '<div class="body">';
+      // doğrulama durumu
+      if (r.checks && r.checks.length) {
+        var passed = r.checks.filter(function (c) { return c.ok; }).length;
+        var fails = r.checks.filter(function (c) { return !c.ok; });
+        var chkHtml = '<details><summary>Kontrol listesi (' + passed + '/' + r.checks.length +
+          ')</summary><ul class="chklist">' + r.checks.map(function (c) {
+            return '<li class="' + (c.ok ? 'ok' : 'fail') + '">' + (c.ok ? '✔' : '✘') + ' ' + esc(c.name) +
+              (c.detail && !c.ok ? ' — ' + esc(c.detail) : '') + '</li>';
+          }).join('') + '</ul></details>';
+        if (r.status === 'verified') {
+          body += '<div class="st st-ok"><b>✔ Doğrulandı</b> — ' + passed + '/' + r.checks.length +
+            ' bağımsız kontrol geçti (görünüşler arası oy birliği, toplam boy eşitlikleri, tablo–çizim çapraz kontrolü).' + chkHtml + '</div>';
+        } else if (r.status === 'warning') {
+          body += '<div class="st st-warn"><b>⚠ Uyarılı sonuç</b> — şu kontroller geçemedi: ' +
+            fails.map(function (c) { return esc(c.name); }).join('; ') +
+            '. Ölçüleri çizimden teyit edin.' + chkHtml + '</div>';
+        } else {
+          body += '<div class="st st-err"><b>⛔ Güvenilir sonuç üretilemedi</b> — bu çizim beklenen P-KS düzeninde olmayabilir. Geçemeyen kontroller: ' +
+            fails.map(function (c) { return esc(c.name) + (c.detail ? ' (' + esc(c.detail) + ')' : ''); }).join('; ') +
+            '. Aşağıdaki değerleri KULLANMAYIN, çizimden elle kontrol edin.' + chkHtml + '</div>';
+        }
+      }
+      if (r.status !== 'error' && r.yuzeyAlani != null) {
+        var f2 = function (v) { return v.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+        body += '<div class="area">Toplam Yüzey Alanı: <b>' + f2(r.yuzeyAlani) + ' m²</b> ' +
+          '<small>(' + r.yuzeyDetay.length + ' modülün tavan+taban ' + f2(r.yuzeyModuller) +
+          ' m² ve yan duvarları dahil; ön/arka yüzlerden yalnızca dışarı bakan ' + f2(r.yuzeyUclar) +
+          ' m² sayıldı — modüllerin öpüşen ön/arka yüzlerinde sac yoktur, sayılmadı. Ayak hariç.)</small>' +
+          (r.yuzeyKanalToplam > 0 ? '<br><small>Kanal/damper ağzı açıklıkları da düşülürse: <b>' +
+            f2(r.yuzeyNet) + ' m²</b> (' + r.kanalAcikliklari.length + ' açıklık, ' +
+            f2(r.yuzeyKanalToplam) + ' m²)</small>' : '') +
+          '</div>';
+      }
+      body += '<h3>Hücre Ölçüleri</h3>' + hucreTable(r);
+      body += '<div class="toolbar"><button class="primary" data-xlsx="' + idx + '">Excel indir</button>' +
+              '<button data-copy="' + idx + '">TSV kopyala</button>' +
+              '<button data-csv="' + idx + '">CSV indir</button></div>';
+      if (r.yuzeyDetay && r.yuzeyDetay.length) {
+        body += '<h3>Yüzey Alanı — Modül Modül</h3>' +
+          '<div class="svgwrap" style="max-height:none">' + yuzeyTable(r) + '</div>';
+      }
+      body += '<h3>Malzeme Listesi (' + (r.malzemeler ? r.malzemeler.length : 0) + ' kalem)</h3>' + malzemeTable(r);
+      body += '<div class="toolbar"><button data-mcopy="' + idx + '">Malzeme TSV kopyala</button>' +
+              '<button data-mcsv="' + idx + '">Malzeme CSV indir</button></div>';
+      body += '<details><summary>Modül ölçüleri (' + r.modules.length + ' modül)</summary>' + modulTable(r) + '</details>';
+      body += '<details><summary>Çizim önizleme (hücre sınırları işaretli)</summary><div class="svgwrap">' +
+              buildSvg(r) + '</div></details>';
+      body += '</div>';
+      card.innerHTML = head + body;
+      el.appendChild(card);
+    });
+  }
+
+  // ---------- Excel çıktısı: sonuçların tamamı, sayfa sayfa ----------
+  function excelSheets(list) {
+    var H = XLS.HDR, T = XLS.TXT, I = XLS.INT, D = XLS.DEC, DB = XLS.DECB, B = XLS.BOLD;
+    var hdr = function (arr) { return arr.map(function (t) { return { v: t, s: H }; }); };
+    var stTxt = { verified: 'Doğrulandı', warning: 'UYARILI', error: 'GÜVENİLMEZ' };
+    var sheets = [];
+
+    // 1) Hücre Ölçüleri
+    var r1 = [hdr(['Dosya', 'Santral Adı', 'Sıra', 'Sevkiyat Bloğu', 'Kısım', 'Kat', 'En (mm)',
+      'Boy (mm)', 'Yükseklik (mm)', 'Alan En×Boy (m²)', 'İçindeki Modüller'])];
+    list.forEach(function (r) {
+      (r.hucreler || []).forEach(function (h) {
+        r1.push([r.file, r.santral, { v: h.sira, s: I }, { v: h.blok || h.sira, s: I },
+          h.kisim || '', h.kat, { v: h.en, s: I }, { v: h.boy, s: I },
+          { v: h.yukseklik, s: I }, { v: h.alan, s: DB }, h.moduller]);
+      });
+    });
+    sheets.push({ name: 'Hücre Ölçüleri', rows: r1, widths: [30, 16, 7, 14, 9, 22, 9, 9, 14, 16, 26] });
+
+    // 2) Yüzey Alanı (modül modül)
+    var r2 = [hdr(['Dosya', 'Santral Adı', 'Modül', 'Tip', 'Boy (mm)', 'Yükseklik (mm)',
+      'Tavan+Taban (m²)', 'Yan duvarlar (m²)', 'Ön yüz açık (mm)', 'Arka yüz açık (mm)',
+      'Ön/arka sac (m²)', 'Modül toplam (m²)'])];
+    list.forEach(function (r) {
+      (r.yuzeyDetay || []).forEach(function (d) {
+        r2.push([r.file, r.santral, d.name, d.type, { v: d.boy, s: I }, { v: d.yukseklik, s: I },
+          { v: d.tavanTaban, s: D }, { v: d.yanlar, s: D }, { v: d.solAcik, s: I },
+          { v: d.sagAcik, s: I }, { v: d.onArka, s: D }, { v: d.toplam, s: DB }]);
+      });
+      if (r.yuzeyDetay && r.yuzeyDetay.length) {
+        r2.push([r.file, r.santral, 'TOPLAM', '', '', '', { v: r.yuzeyModuller, s: D }, '', '', '',
+          { v: r.yuzeyUclar, s: D }, { v: r.yuzeyAlani, s: DB }]);
+      }
+    });
+    sheets.push({ name: 'Yüzey Alanı (modül modül)', rows: r2,
+      widths: [30, 16, 8, 22, 10, 13, 15, 15, 15, 15, 14, 15] });
+
+    // 3) Modül Ölçüleri
+    var r3 = [hdr(['Dosya', 'Santral Adı', 'Modül', 'Tip', 'Kat', 'En (mm)', 'Boy (mm)',
+      'Yükseklik (mm)', 'Kaynak (boy/yük)', 'Zincir teyidi'])];
+    list.forEach(function (r) {
+      (r.modules || []).forEach(function (m) {
+        var kat = m.deck || (r.deckHeights.length === 1 ? 'tek kat' : '');
+        var teyit = m.zincirBoy != null
+          ? (Math.abs(m.zincirBoy - m.boy) <= 25 ? 'zincir ✓' : 'zincir ' + m.zincirBoy + ' ✗')
+          : (m.votes || '');
+        r3.push([r.file, r.santral, m.name, m.type, kat, { v: m.en, s: I }, { v: m.boy, s: I },
+          { v: m.yukseklik, s: I }, m.kaynak || '', teyit]);
+      });
+    });
+    sheets.push({ name: 'Modül Ölçüleri', rows: r3, widths: [30, 16, 8, 24, 12, 9, 9, 14, 15, 14] });
+
+    // 4) Malzeme Listesi
+    var r4 = [hdr(['Dosya', 'Santral Adı', 'Malzeme', 'Özellikler', 'Kullanım Yeri', 'Miktar', 'Modül'])];
+    list.forEach(function (r) {
+      (r.malzemeler || []).forEach(function (m) {
+        r4.push([r.file, r.santral, m.malzeme, m.ozellik, m.yer, { v: m.miktar, s: I }, m.kaynak || '']);
+      });
+    });
+    sheets.push({ name: 'Malzeme Listesi', rows: r4, widths: [30, 16, 26, 48, 22, 8, 10] });
+
+    // 5) Santral Özeti
+    var r5 = [hdr(['Dosya', 'Santral Adı', 'Model', 'Boyut', 'Hava Debisi', 'Modül Sayısı',
+      'Toplam Boy (mm)', 'En (mm)', 'Kat Yapısı', 'En Yüksek Gövde (mm)', 'Ayak (mm)', 'Ağırlık',
+      'Hücre Alanı — izdüşüm (m²)', 'Yüzey Alanı (m²)', 'Kanal ağzı düşülmüş (m²)', 'Durum'])];
+    list.forEach(function (r) {
+      var dh = r.deckHeights || [];
+      var kat = dh.length === 1 ? 'Tek kat (' + dh[0] + ')' : 'Çift kat (' + dh.join(' + ') + ')';
+      var izd = (r.hucreler || []).filter(function (h) { return !/^Üst/.test(h.kat); })
+        .reduce(function (a, h) { return a + (h.alan || 0); }, 0);
+      r5.push([r.file, r.santral, r.model, r.boyut, r.debi, { v: (r.modules || []).length, s: I },
+        { v: r.totalLen, s: I }, { v: r.genislik, s: I }, kat, { v: r.maxYukseklik, s: I },
+        { v: r.ayak, s: I }, r.agirlik, { v: Math.round(izd * 100) / 100, s: D },
+        { v: r.yuzeyAlani, s: DB }, { v: r.yuzeyNet, s: D }, stTxt[r.status] || '']);
+    });
+    sheets.push({ name: 'Santral Özeti', rows: r5,
+      widths: [30, 16, 18, 10, 12, 10, 14, 10, 20, 18, 9, 10, 20, 14, 18, 12] });
+
+    // 6) Notlar
+    var notlar = [
+      ['NOTLAR', B], [''],
+      ['ÖLÇÜ KAYNAĞI', B],
+      ['Modül ölçüleri çizimin KATMAN (layer) bilgisinden okunur: her varlık "(M1) - Tip_Right_..." gibi'],
+      ['kendi modülü ve görünüşüyle etiketlidir; her modülün boyu ve yüksekliği kendi katmanındaki'],
+      ['ölçüden birebir alınır. Böylece bütün modüllere aynı kat yüksekliği varsayılmaz — komşusundan'],
+      ['yüksek bir gövde (DES ailesindeki plakalı eşanjör) gerçek yüksekliğiyle okunur.'],
+      ['Boy ayrıca ölçü zincirinden bağımsız olarak da okunur ve iki kaynak karşılaştırılır.'],
+      [''],
+      ['HÜCRE', B],
+      ['Hücre = santralin sevkiyat/gövde bloğu. Sınırlar çizimdeki ara-toplam ölçü zincirlerinden okunur.'],
+      ['KADEMELİ BLOK: bir sevkiyat bloğu içinde gövde yüksekliği değişebilir. Böyle bloklar yüksekliğin'],
+      ['sabit kaldığı KISIMlara bölünerek listelenir; "Sevkiyat Bloğu" ve "Kısım" sütunları hangi'],
+      ['satırların aynı blok olduğunu gösterir.'],
+      ['"Alan En×Boy" her satırın plan alanıdır. Çift katlı santralde üst kat alt katın üstüne bindiği'],
+      ['için özetteki "Hücre Alanı — izdüşüm" yalnızca zemine oturan satırları toplar.'],
+      [''],
+      ['YÜZEY ALANI HESABI — modül modül', B],
+      ['Santrala tek kutu gibi bakılmaz; her modülün kendi yüzeyleri ayrı ayrı hesaplanır.'],
+      ['Her modülde tavan + taban (2 × En × Boy) ve iki yan duvar (2 × Boy × Yükseklik) tam sayılır.'],
+      ['Hava akışı doğrultusundaki ön/arka yüzlerden YALNIZCA dışarı bakan kısım sayılır;'],
+      ['komşu modülle öpüşen bölümde sac olmadığı için o bölüm hesaba katılmaz.'],
+      ['Kapalı bölüm, o düzlemde temas eden komşuların dikey örtüşmesinden birebir bulunur; böylece'],
+      ['kısmi temaslar da (komşusundan yüksek gövdenin açıkta kalan üst bölümü) doğru çıkar.'],
+      [''],
+      ['Ayak/kaide yüzeyleri dahil değildir.'],
+      ['"Yüzey Alanı" sütununda kanal/damper ağzı açıklıkları düşülmemiştir; düşülmüş hâli ayrı sütundadır.'],
+      [''],
+      ['Her sonuç bağımsız kontrollerden geçirilir; "Durum" Doğrulandı değilse ölçüler çizimden teyit edilmelidir.']
+    ].map(function (n) { return [{ v: n[0], s: n[1] || 0 }]; });
+    sheets.push({ name: 'Notlar', rows: notlar, widths: [132], freeze: false, filter: false });
+
+    return sheets;
+  }
+
+  function excelIndir(list, adi, btn) {
+    var ok = list.filter(function (r) { return !r.error; });
+    if (!ok.length) return;
+    try {
+      var blob = XLS.build(excelSheets(ok));
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = adi;
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      flash(btn, 'İndirildi ✓');
+    } catch (e) {
+      flash(btn, 'Hata: ' + e.message);
+    }
+  }
+
+  function download(name, text, mime) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + text], { type: mime || 'text/plain' }));
+    a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 300);
+  }
+  function copyText(t, btn) {
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
+      .then(function () { flash(btn, 'Kopyalandı ✓'); })
+      .catch(function () {
+        var ta = document.createElement('textarea');
+        ta.value = t; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); ta.remove(); flash(btn, 'Kopyalandı ✓');
+      });
+  }
+  function flash(btn, txt) {
+    if (!btn) return;
+    var old = btn.textContent; btn.textContent = txt;
+    setTimeout(function () { btn.textContent = old; }, 1400);
+  }
+
+  function handleFiles(files) {
+    var arr = Array.prototype.slice.call(files)
+      .filter(function (f) { return /\.dxf$/i.test(f.name); });
+    if (!arr.length) return;
+    var done = 0;
+    arr.forEach(function (f) {
+      f.text().then(function (text) {
+        try { results.push(DxfCore.analyzeDxf(text, f.name)); }
+        catch (e) { results.push({ file: f.name, error: e.message }); }
+      }).catch(function (e) {
+        results.push({ file: f.name, error: String(e) });
+      }).finally(function () {
+        done++;
+        if (done === arr.length) {
+          results.sort(function (a, b) { return a.file.localeCompare(b.file, 'tr'); });
+          render();
+        }
+      });
+    });
+  }
+
+  // test kancası (otomatik doğrulama için)
+  window.__dxfLoad = function (name, text) {
+    try { results.push(DxfCore.analyzeDxf(text, name)); }
+    catch (e) { results.push({ file: name, error: e.message + '\n' + (e.stack || '') }); }
+    render();
+    return results[results.length - 1];
+  };
+  window.__dxfResults = function () { return results; };
+  window.__dxfXlsx = function () {
+    return XLS.build(excelSheets(results.filter(function (r) { return !r.error; })));
+  };
+
+  var drop = $('#dxf_drop');
+  drop.addEventListener('click', function () { $('#dxf_file').click(); });
+  $('#dxf_file').addEventListener('change', function (e) { handleFiles(e.target.files); e.target.value = ''; });
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); });
+  });
+  drop.addEventListener('drop', function (e) { handleFiles(e.dataTransfer.files); });
+
+  DXKOK().addEventListener('click', function (e) {
+    var t = e.target;
+    if (t.dataset && t.dataset.copy != null) copyText(tsvFor([results[+t.dataset.copy]]), t);
+    if (t.dataset && t.dataset.csv != null) {
+      var r = results[+t.dataset.csv];
+      download((r.santral || r.file).replace(/[\\/:*?"<>|]/g, '_') + ' hucre.csv',
+        tsvFor([r]).replace(/\t/g, ';'), 'text/csv');
+    }
+    if (t.dataset && t.dataset.xlsx != null) {
+      var rx = results[+t.dataset.xlsx];
+      excelIndir([rx], (rx.santral || rx.file).replace(/[\\/:*?"<>|]/g, '_') + '.xlsx', t);
+    }
+    if (t.dataset && t.dataset.mcopy != null) copyText(malzemeTsvFor([results[+t.dataset.mcopy]]), t);
+    if (t.dataset && t.dataset.mcsv != null) {
+      var r2 = results[+t.dataset.mcsv];
+      download((r2.santral || r2.file).replace(/[\\/:*?"<>|]/g, '_') + ' malzeme.csv',
+        malzemeTsvFor([r2]).replace(/\t/g, ';'), 'text/csv');
+    }
+  });
+  $('#dxf_xlsxAll').addEventListener('click', function (e) {
+    excelIndir(results, 'DXF Ölçü Sonuçları.xlsx', e.target);
+  });
+  $('#dxf_copyAll').addEventListener('click', function (e) { copyText(tsvFor(results.filter(function (r) { return !r.error; })), e.target); });
+  $('#dxf_mCopyAll').addEventListener('click', function (e) { copyText(malzemeTsvFor(results.filter(function (r) { return !r.error; })), e.target); });
+  $('#dxf_csvAll').addEventListener('click', function () {
+    download('hucre_olculeri.csv', tsvFor(results.filter(function (r) { return !r.error; })).replace(/\t/g, ';'), 'text/csv');
+  });
+  $('#dxf_clearAll').addEventListener('click', function () { results = []; render(); });
+}
+
+MOD.push({grup:"Havalandırma", id:"dxfolcu", ad:"DXF Hücre Ölçüsü", baslik:"DXF Hücre ve Modül Ölçü Çıkarıcı",
+ lead:"P-KS klima santrali teknik resim DXF'lerinden hücre ve modül ölçülerini (En × Boy × Yükseklik, mm), yüzey alanını ve malzeme listesini otomatik çıkarır; Excel/CSV/TSV olarak dışarı verir.",
+ html:DXF_CSS+"<div class=\"card\"><h3>DXF Dosyaları</h3><div class=\"dxfx\">\n  <div id=\"dxf_drop\">\n    <div><b>DXF dosyalarını buraya sürükleyin</b> veya tıklayıp seçin (birden çok dosya olabilir)</div>\n    <div class=\"hint\">VectorDraw / P-KS teknik resim DXF'leri (AC1021, UTF-8) desteklenir. Ölçüler çizimdeki ölçü zincirlerinden okunur. Dosyalar hiçbir yere gönderilmez, tüm işlem tarayıcıda yapılır.</div>\n    <input id=\"dxf_file\" type=\"file\" multiple accept=\".dxf\">\n  </div>\n  <div class=\"toolbar\" id=\"dxf_bar\" style=\"display:none\">\n    <button class=\"primary\" id=\"dxf_xlsxAll\">Excel indir (tüm sonuçlar)</button>\n    <button id=\"dxf_copyAll\">Tümünü TSV kopyala</button>\n    <button id=\"dxf_csvAll\">Tümünü CSV indir</button>\n    <button id=\"dxf_mCopyAll\">Tüm malzemeleri TSV kopyala</button>\n    <button id=\"dxf_clearAll\">Temizle</button>\n    <span class=\"legend\">\n      <span><i style=\"background:var(--dx-alt)\"></i>Alt kat</span>\n      <span><i style=\"background:var(--dx-ust)\"></i>Üst kat</span>\n      <span><i style=\"background:var(--dx-tam)\"></i>Tam yükseklik (eşanjör)</span>\n    </span>\n  </div>\n  <div id=\"dxf_res\"></div>\n</div></div>\n<div class=\"card\"><h3>Notlar</h3>\n <div class=\"note\">Yükseklikler <b>kasa ölçüsüdür</b>; 150 mm ayak/kaide dahil değildir. Çizim birimi cm → mm çevrilmiştir.</div>\n <div class=\"note\">Yüzey alanı santrala tek kutu gibi bakılarak değil, <b>modül modül</b> hesaplanır:\n her modülde tavan + taban (2 × En × Boy) ve iki yan duvar (2 × Boy × Yükseklik) tam sayılır; hava akışı\n doğrultusundaki ön/arka yüzlerden yalnızca <b>dışarı bakan</b> kısım sayılır — komşu modülle öpüşen bölümde\n sac olmadığı için o bölüm hesaba katılmaz. Kanal/damper ağzı açıklıkları düşülmüş hâli ayrı sütundadır.</div>\n <div class=\"note\">Her sonuç bağımsız kontrollerden geçer; <b>Durum</b> \"Doğrulandı\" değilse ölçüler\n çizimden teyit edilmelidir.</div></div>",
+ calc:function(){ if(typeof dxfBaslat==="function") dxfBaslat(); }});
+
 /*__YENI_MODULLER__*/
 /* ============================ ÇALIŞTIRMA ============================ */
-function calcAll(){ MOD.forEach(m=>{ try{ m.calc(); }catch(e){ console.warn(m.id,e); } }); }
+/* ---------- tablo sütun hizalaması ----------
+   Genel kural "th,td{text-align:right}" ile .mt/.celik/.celikx tablolarındaki
+   "th{text-align:left}" kuralı çakışıyordu; başlık solda, içerik sağda kalıyordu.
+   Aşağıdaki geçiş her sütunun tipini gövdeden okuyup başlığı ile hücrelerini
+   aynı yöne sabitler: form alanı varsa sola, tamamı sayısalsa sağa, aksi hâlde sola. */
+const SAYI_RE=/^[-+]?(\d{1,3}(\.\d{3})+|\d+)([.,]\d+)?\s*%?$/;
+/* boş/yer tutucu hücreler sütun tipini belirlemez (tire, çizgi, nokta, çarpı…) */
+const BOS_RE=/^[-\u2010-\u2015\u2212\u00d7\u00b7\u2022\u2026.\s]+$/;
+function sayisalMi(t){
+  const x=String(t).trim().replace(/ /g,' ');
+  if(!x) return false;
+  return SAYI_RE.test(x);
+}
+function theadIzgara(thead){
+  const g=[];
+  [...thead.rows].forEach((tr,r)=>{
+    g[r]=g[r]||[]; let c=0;
+    [...tr.cells].forEach(h=>{
+      while(g[r][c]) c++;
+      const rs=h.rowSpan||1, cs=h.colSpan||1;
+      for(let i=0;i<rs;i++){ g[r+i]=g[r+i]||[]; for(let j=0;j<cs;j++) g[r+i][c+j]=h; }
+      c+=cs;
+    });
+  });
+  return g;
+}
+function hAta(el,v){ if(el && el.getAttribute('data-h')!==v) el.setAttribute('data-h',v); }
+function hizaKolon(t){
+  const thead=t.tHead, tb=t.tBodies[0];
+  if(!thead || !thead.rows.length || !tb || !tb.rows.length) return;
+  const tip=[];
+  [...tb.rows].forEach(tr=>{
+    let c=0;
+    [...tr.cells].forEach(td=>{
+      const cs=td.colSpan||1;
+      if(cs===1){
+        const k=tip[c]||(tip[c]={form:0,sayi:0,yazi:0,bos:0});
+        const ctl=td.querySelector('input,select,textarea');
+        if(ctl) k.form++;
+        else{
+          const x=(td.textContent||'').trim();
+          if(!x || BOS_RE.test(x)) k.bos++;
+          else if(sayisalMi(x)) k.sayi++;
+          else k.yazi++;
+        }
+      }
+      c+=cs;
+    });
+  });
+  const g=theadIzgara(thead), alt=g[g.length-1]||[];
+  const n=Math.max(tip.length, alt.length);
+  const yon=[];
+  for(let i=0;i<n;i++){
+    const k=tip[i];
+    yon[i] = (!k || k.form || k.yazi || !k.sayi) ? 'l' : 'r';
+  }
+  for(let i=0;i<n;i++){
+    const h=alt[i];
+    if(h) hAta(h, (h.colSpan||1)>1 ? 'c' : yon[i]);
+  }
+  /* üst satırdaki grup başlıkları ortalanır */
+  for(let r=0;r<g.length-1;r++){
+    const sr=g[r]||[];
+    for(let i=0;i<sr.length;i++){
+      const h=sr[i];
+      if(h && (h.colSpan||1)>1) hAta(h,'c');
+      else if(h && !h.getAttribute('data-h')) hAta(h,yon[i]||'l');
+    }
+  }
+  [...tb.rows].forEach(tr=>{
+    let c=0;
+    [...tr.cells].forEach(td=>{
+      const cs=td.colSpan||1;
+      if(cs===1) hAta(td, yon[c]||'l');
+      c+=cs;
+    });
+  });
+  const tf=t.tFoot;
+  if(tf) [...tf.rows].forEach(tr=>{
+    let c=0;
+    [...tr.cells].forEach(td=>{
+      const cs=td.colSpan||1;
+      if(cs===1) hAta(td, yon[c]||'l');
+      c+=cs;
+    });
+  });
+}
+function tabloHizala(kok){
+  if(!kok) return;
+  kok.querySelectorAll('table').forEach(t=>{ try{ hizaKolon(t); }catch(e){} });
+}
+function tabloHizalaHepsi(){ tabloHizala(document.getElementById('main')); }
+function calcAll(){
+  MOD.forEach(m=>{ try{ m.calc(); }catch(e){ console.warn(m.id,e); } });
+  try{ tabloHizala(document.querySelector('#main > section.on')); }catch(e){}
+}
 let _calcBekliyor=false;
 function calcAllGec(){ if(_calcBekliyor) return; _calcBekliyor=true;
   requestAnimationFrame(()=>{ _calcBekliyor=false; calcAll(); }); }
@@ -12700,7 +15108,13 @@ function binaTipiDegisti(){
 }
 var AKTIF_GRUP = null;
 const kac=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function grupList(){ const g=[]; MOD.forEach(m=>{ if(!g.includes(m.grup)) g.push(m.grup); }); return g; }
+/* Türkçe alfabetik sıralama (ç ğ ı i ö ş ü doğru yerde) */
+const trSirala=(function(){
+  try{ const c=new Intl.Collator('tr',{numeric:true}); return (a,b)=>c.compare(a,b); }
+  catch(e){ return (a,b)=>String(a).localeCompare(String(b),'tr'); }
+})();
+function grupList(){ const g=[]; MOD.forEach(m=>{ if(!g.includes(m.grup)) g.push(m.grup); }); return g.sort(trSirala); }
+function grupMod(g){ return MOD.filter(m=>m.grup===g).sort((a,b)=>trSirala(a.ad,b.ad)); }
 
 /* ---- kategori simgeleri (gömülü SVG, dış bağlantı yok) ---- */
 const GRUP_IK={
@@ -12733,7 +15147,7 @@ function yanCiz(){
     const ac = g===AKTIF_GRUP;
     let h = `<button class="scat${ac?' on':''}" data-g="${kac(g)}" onclick="gotoGrup('${kac(g)}')">`+
             ikonSVG(g)+`<span>${kac(g)}</span><em>${grupSayi(g)}</em></button>`;
-    if(ac) h += `<div class="smods">`+MOD.filter(m=>m.grup===g).map(m=>
+    if(ac) h += `<div class="smods">`+grupMod(g).map(m=>
       `<button id="nav_${m.id}" class="${m.id===AKTIF_MOD?'on':''}" onclick="goto('${m.id}')">${kac(m.ad)}</button>`).join('')+`</div>`;
     return h;
   }).join('');
@@ -12744,7 +15158,7 @@ function drawerCiz(){
   k.innerHTML = grupList().map(g=>
     `<button class="${g===AKTIF_GRUP?'on':''}" onclick="gotoGrupSadece('${kac(g)}')">`+
     ikonSVG(g)+`<span>${kac(g)}</span></button>`).join('');
-  l.innerHTML = MOD.filter(m=>m.grup===AKTIF_GRUP).map(m=>
+  l.innerHTML = grupMod(AKTIF_GRUP).map(m=>
     `<button class="${m.id===AKTIF_MOD?'on':''}" onclick="goto('${m.id}');drawerKapat()">`+
     `<span>${kac(m.ad)}</span><i>${m.id===AKTIF_MOD?'●':'›'}</i></button>`).join('');
   const b=$('drawerBas'); if(b) b.textContent=AKTIF_GRUP;
@@ -12760,12 +15174,32 @@ function sheetKapat(){ $('aracpanel').classList.remove('ac'); }
 
 let AKTIF_MOD='';
 function yerYaz(){
-  const m=MOD.find(x=>x.id===AKTIF_MOD); const e=$('yerBilgi'); if(!e) return;
-  e.innerHTML = m ? `<i>${kac(m.grup)}</i><s>›</s><b>${kac(m.ad)}</b>` : '';
+  const m=MOD.find(x=>x.id===AKTIF_MOD); const e=$('yerBilgi');
+  if(e) e.innerHTML = m ? `<i>${kac(m.grup)}</i><s>›</s><b>${kac(m.ad)}</b>` : '';
+  yazdirBasYaz(false);
 }
+function yazdirBasYaz(tumu){
+  const e=$('yazdirBas'); if(!e) return;
+  const m=MOD.find(x=>x.id===AKTIF_MOD);
+  const t=new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+  e.innerHTML = tumu
+    ? `<b>Mekanik Tesisat Hesap Aracı</b> — tüm modüller (${MOD.length}) · ${t}`
+    : (m ? `<b>${kac(m.ad)}</b> · ${kac(m.grup)} · Mekanik Tesisat Hesap Aracı · ${t}` : '');
+}
+/* Yazdır: varsayılan olarak yalnız açık modül; Shift basılıysa tüm modüller */
+function yazdir(ev){
+  const tumu = !!(ev && ev.shiftKey);
+  document.body.classList.toggle('yazdir-tumu', tumu);
+  yazdirBasYaz(tumu);
+  if(tumu) tabloHizalaHepsi();
+  window.print();
+}
+window.addEventListener('afterprint',()=>{
+  document.body.classList.remove('yazdir-tumu'); yazdirBasYaz(false);
+});
 function gotoGrup(g, hedef){
   AKTIF_GRUP = g;
-  const ilk = (hedef && MOD.find(m=>m.id===hedef)) || MOD.find(m=>m.grup===g);
+  const ilk = (hedef && MOD.find(m=>m.id===hedef)) || grupMod(g)[0];
   if(ilk) goto(ilk.id); else { yanCiz(); }
 }
 function goto(id){
