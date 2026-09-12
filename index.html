@@ -25139,7 +25139,9 @@ function kur(){
   var i, zr = '';
   var vars = [['1. Bodrum','Z1',2883,2.8,'DT1','TH1']];
   for (i = 0; i < NZ; i++){
-    var d = vars[i] || ['', '', 0, 0, YOK, YOK];
+    /* boş satırlar da hazır gelir: zon adı sırayla, 1. duman / taze hava şaftı DT1 / TH1 —
+       yeni zonda yalnız kat, alan ve yükseklik yazılır, farklı şaft gerekiyorsa değiştirilir */
+    var d = vars[i] || ['', 'Z' + (i + 1), 0, 0, DS[0], TS[0]];
     zr += '<tr id="oz_tr'+i+'">'+
       '<td>'+txt('oz_kat'+i, d[0], 86)+'</td>'+
       '<td>'+txt('oz_zon'+i, d[1], 56)+'</td>'+
@@ -25291,7 +25293,9 @@ function kur(){
    'Farklı dağılım için <b>pay %</b> alanına <b>60/40</b> ya da <b>50/30/20</b> yazın (ondalık gerekirse '+
    '<b>nokta</b>: 33.3). Eksik yazılan pay kalan şaftlara eşit dağıtılır; toplam 100 değilse oranlar '+
    'korunarak normalleştirilir ve uyarı verilir. Yangın anında zonun bağlı olduğu şaftların hepsi kendi payıyla çalışır.<br>'+
-   'Giriş açıklığı yüksekliği 0 bırakılırsa zon yüksekliği alınır. Jet fanlar bir sonraki kartta zon başına girilir.</div></div>'+
+   'Satırlar zon adı (Z1, Z2…) ve 1. şaftlar (DT1 / TH1) dolu gelir; yeni zonda kat, alan ve yükseklik yazmak yeter, '+
+   'başka şaft gerekiyorsa listeden değiştirin. Giriş açıklığı yüksekliği 0 bırakılırsa zon yüksekliği alınır. '+
+   'Jet fanlar bir sonraki kartta zon başına girilir.</div></div>'+
 
   /* zon seçilir; altında bütün jet fan tipleri adet kutularıyla açık durur */
   '<div class="card"><h3>Jet Fanlar</h3>'+
