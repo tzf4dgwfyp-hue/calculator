@@ -24934,9 +24934,13 @@ Object.assign(XZ.KART, { xl_trafo:'trafo', xl_kumes:'kumes', xl_bunker:'bunker',
      damper değil tel fens vardır. Açıklık KAT başınadır: aynı kattaki zonlar şaftı
      ortak kullanır, o katta tek damper / tel fens olur. Karşı basınç bu elemanlarla
      hesaplanır.
-   • Zon başına jet fan adedi girilir.
+   • Şaft adları: duman tahliye DT1…DT8, taze hava TH1…TH8.
+   • Jet fanlar katalogdan seçilir (P-AJF / P-RJF, tek ve çift yönlü): öntanımlı tip
+     bir kez seçilir, zon başına yalnız adet yazılır; bir zonda iki farklı tip olabilir.
+   • Ölçüler genişlik x yükseklik yazılır; damperde (genişlik+200)xyükseklik — +200
+     damperin kaplayacağı yeri gösterir, hiçbir hesaba katılmaz.
    • Ekipman listesi .xlsx olarak indirilir (fan, şaft, damper, tel fens, panjur,
-     jet fan, zon sayfaları).
+     jet fan, jet fan lejantı, zon sayfaları).
    • PDF: geniş etkileşimli tablolar yerine dar özet tablolar basılır, boş satırlar
      ve manuel hesaplama basılmaz, şema sayfa yüksekliğine sığdırılır.
    ============================================================================ */
@@ -24945,8 +24949,15 @@ Object.assign(XZ.KART, { xl_trafo:'trafo', xl_kumes:'kumes', xl_bunker:'bunker',
 
 var NZ = 18;                         /* zon satırı sayısı */
 var YOK = '—';
-var DS = ['D1','D2','D3','D4','D5','D6','D7','D8'];   /* duman tahliye şaftları */
-var TS = ['T1','T2','T3','T4','T5','T6','T7','T8'];   /* taze hava şaftları */
+var DS = ['DT1','DT2','DT3','DT4','DT5','DT6','DT7','DT8'];   /* duman tahliye şaftları */
+var TS = ['TH1','TH2','TH3','TH4','TH5','TH6','TH7','TH8'];   /* taze hava şaftları */
+/* Önceki sürümde şaftlar D1…D8 / T1…T8 idi. O sürümle kaydedilmiş proje (.json) yüklenirken
+   uygulama seçim kutusuna "D1" yazar; ad listede olmadığından seçim boşa düşer ve zon sessizce
+   şaftsız kalırdı. eskiAdlariKabulEt() şaft ve jet fan kutularının value yazıcısını eski adı
+   yenisine çevirecek şekilde sarar. */
+var ESKI_AD = {};
+DS.forEach(function(x, j){ ESKI_AD['D' + (j + 1)] = x; });
+TS.forEach(function(x, j){ ESKI_AD['T' + (j + 1)] = x; });
 var V_DUMAN = 10, V_TAZE = 8;        /* şaft tasarım hızı üst sınırları (m/s) */
 
 /* Eleman kütüphanesi: [anahtar, ad, kol, tür, hız m/s, serbest alan, k]
@@ -24967,6 +24978,66 @@ function elBul(kol, tur){
   return null;
 }
 
+/* Jet fan kataloğu — proje lejantındaki tipler. İtki, devir ve motor gücü
+   YÜKSEK / DÜŞÜK devir değerleridir; toplamlar yüksek devirle hesaplanır.
+   [model, itki N, devir d/d, motor kW, yönler, lejant rengi] */
+var JF_MODEL = [
+  ['P-AJF 315', [26, 7],   [2850, 1450], [1, 0.25],   ['tek', 'cift'], '#2f8f3a'],
+  ['P-AJF 355', [46, 12],  [2850, 1450], [1.3, 0.33], ['tek', 'cift'], '#b81fb8'],
+  ['P-AJF 400', [76, 19],  [2850, 1450], [2, 0.5],    ['tek', 'cift'], '#2346d6'],
+  ['P-AJF 450', [84, 21],  [2850, 1450], [2.7, 0.66], ['tek', 'cift'], '#d92b2b'],
+  ['P-AJF 500', [106, 27], [2850, 1450], [2.7, 0.66], ['tek', 'cift'], '#0e9aae'],
+  ['P-RJF 500', [48, 12],  [1450, 750],  [1.2, 0.3],  ['tek'],         '#23a02f'],
+  ['P-RJF 560', [69, 18],  [1450, 750],  [2.2, 0.55], ['tek'],         '#c21a9e']
+];
+var JF = [];
+JF_MODEL.forEach(function(m){
+  m[4].forEach(function(y){
+    var yon = y === 'cift' ? 'çift yönlü' : 'tek yönlü';
+    JF.push({ model:m[0], yon:yon, itki:m[1], devir:m[2], guc:m[3], renk:m[5], ad:m[0] + ' · ' + yon });
+  });
+});
+var JF_OT = 'öntanımlı';                 /* satırdaki seçim: kartın başındaki tip */
+var JF_VARS = 'P-AJF 400 · tek yönlü';
+/* P-RJF 560 bir sürümde yanlışlıkla P-AJF 560 yazılmıştı; o sürümle kaydedilmiş seçim de tanınsın */
+ESKI_AD['P-AJF 560 · tek yönlü'] = 'P-RJF 560 · tek yönlü';
+function jfBul(ad){
+  for (var i = 0; i < JF.length; i++) if (JF[i].ad === ad) return JF[i];
+  return null;
+}
+/* katalog değer çifti: "76 / 19", "2 / 0,5" */
+function cift(p){ return p.map(function(x){ return String(x).replace('.', ','); }).join(' / '); }
+function jfSec(id){
+  return '<select id="'+id+'" onchange="calcAll()" style="min-width:150px">'+
+    [JF_OT].concat(JF.map(function(j){ return j.ad; })).map(function(x, k){
+      return '<option'+(k === 0 ? ' selected' : '')+'>'+x+'</option>'; }).join('')+'</select>';
+}
+/* lejant simgesi: tek yönlü tek koni, çift yönlü iki koni (çizim lejantındaki gibi);
+   RJF'lerde çizimdeki gibi gövdenin üstünde ikinci bir dikdörtgen (motor kutusu) vardır */
+function jfSimge(j){
+  var c = j.renk, rjf = j.model.indexOf('P-RJF') === 0, koni = j.yon.indexOf('çift') === 0
+    ? '<path d="M23 10 L2 2 L2 18 Z M23 10 L44 2 L44 18 Z" fill="'+c+'" fill-opacity=".28" stroke="'+c+'" stroke-width="1.2"/>'+
+      '<rect x="20.5" y="8.5" width="5" height="3" fill="'+c+'"/>'
+    : '<rect x="1" y="8" width="6" height="4" fill="'+c+'"/>'+
+      (rjf ? '<rect x="1" y="3" width="7" height="3" fill="'+c+'"/>' : '')+
+      '<path d="M7 10 L44 2 L44 18 Z" fill="'+c+'" fill-opacity=".28" stroke="'+c+'" stroke-width="1.2"/>';
+  return '<svg width="46" height="20" viewBox="0 0 46 20" aria-hidden="true" style="display:block">'+koni+'</svg>';
+}
+/* bir zonun jet fanları: iki yuva; "öntanımlı" ya da tanınmayan tip → kartın başındaki tip;
+   aynı tip iki yuvada seçilirse birleştirilir */
+function jetFanlar(i, varsayilan){
+  var liste = [], adet = 0, itki = 0, guc = 0;
+  [1, 2].forEach(function(s){
+    var n = Math.max(0, Math.round(V('oj_n'+s+i)));
+    if (!(n > 0)) return;
+    var j = jfBul(S('oj_t'+s+i)) || varsayilan, x = null;
+    for (var k = 0; k < liste.length; k++) if (liste[k].j === j) x = liste[k];
+    if (x) x.adet += n; else liste.push({ j:j, adet:n });
+    adet += n; itki += n*j.itki[0]; guc += n*j.guc[0];
+  });
+  return { liste:liste, adet:adet, itki:itki, guc:guc };
+}
+
 var SON = null;                      /* son hesap — Excel dışa aktarımı bunu kullanır */
 
 function esc(s){ return String(s).replace(/[&<>"']/g, function(c){
@@ -24985,6 +25056,21 @@ function sec(id, liste, val){
 }
 function sinif(id, ad, acik){
   var e = $(id); if (e && e.classList) e.classList.toggle(ad, !!acik);
+}
+function eskiAdlariKabulEt(){
+  if (typeof HTMLSelectElement === 'undefined') return;
+  var d = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+  if (!d || !d.get || !d.set) return;
+  var ids = ['op_kesitsaft', 'oj_tip'];
+  for (var i = 0; i < NZ; i++)
+    ['oz_ds1','oz_ds2','oz_ds3','oz_ts1','oz_ts2','oz_ts3','oj_t1','oj_t2'].forEach(function(p){ ids.push(p + i); });
+  ids.forEach(function(id){
+    var e = document.getElementById(id);
+    if (!e || Object.prototype.hasOwnProperty.call(e, 'value')) return;
+    Object.defineProperty(e, 'value', { configurable:true, enumerable:true,
+      get: function(){ return d.get.call(this); },
+      set: function(v){ d.set.call(this, Object.prototype.hasOwnProperty.call(ESKI_AD, v) ? ESKI_AD[v] : v); } });
+  });
 }
 /* Bir zonun debisinin şaftlara dağılımı → [[şaft, oran], ...]
    Boşsa seçili şaftlara EŞİT bölünür; "60/40" → %60 / %40; "50/30/20" → üç şafta.
@@ -25025,18 +25111,27 @@ function payInp(id){
          'style="width:70px;text-align:center">';
 }
 /* eleman boyutlandırma: brüt alan = debi ⁄ hız ⁄ 3600 ⁄ serbest alan;
-   Ölçü 2 = alan ⁄ Ölçü 1, sipariş ölçüsü 50 mm'ye yukarı yuvarlanır */
+   genişlik (o1) sabit, yükseklik (o2) = alan ⁄ genişlik, 50 mm'ye yukarı yuvarlanır */
 function boyut(e, q){
   var v = V('oe_v'+e[0]), s = V('oe_s'+e[0]), k = V('oe_k'+e[0]), o1 = V('oe_o'+e[0]);
   var A = (v > 0 && s > 0 && q > 0) ? q/v/3600/s : 0;
   var o2 = (o1 > 0 && A > 0) ? A*1e6/o1 : 0;
   return { v:v, s:s, k:k, A:A, o1:o1, o2:o2, o2y: o2 > 0 ? Math.ceil(o2/50 - 1e-9)*50 : 0, dp: k*v*v };
 }
+/* ölçü yazımı: genişlik x yükseklik, tam sayı, binlik ayırıcısız. Damperde genişliğe damper
+   payı parantez içinde eklenir — (1200+200)x700. Pay yalnız damperin kaplayacağı yeri gösterir;
+   alan, hız, basınç ve Excel'deki genişlik sütunu paysız değerdir. */
+function olcuYaz(b, damper){
+  if (!b || !(b.o2y > 0)) return '—';
+  var gn = Math.round(b.o1), yk = Math.round(b.o2y);
+  var pay = damper ? Math.round(Math.max(0, V('oe_dpay'))) : 0;
+  return (pay > 0 ? '(' + gn + '+' + pay + ')' : String(gn)) + 'x' + yk;
+}
 
 /* ------------------------------------------------------------------ HTML */
 function kur(){
   var i, zr = '';
-  var vars = [['1. Bodrum','Z1',2883,2.8,'D1','T1']];
+  var vars = [['1. Bodrum','Z1',2883,2.8,'DT1','TH1']];
   for (i = 0; i < NZ; i++){
     var d = vars[i] || ['', '', 0, 0, YOK, YOK];
     zr += '<tr id="oz_tr'+i+'">'+
@@ -25044,7 +25139,6 @@ function kur(){
       '<td>'+txt('oz_zon'+i, d[1], 56)+'</td>'+
       '<td>'+inp('oz_alan'+i, d[2], 'any', 78)+'</td>'+
       '<td>'+inp('oz_yuk'+i, d[3], '0.1', 58)+'</td>'+
-      '<td>'+inp('oz_jf'+i, 0, '1', 52)+'</td>'+
       '<td>'+inp('oz_ae'+i, 0, '0.1', 58)+'</td>'+
       '<td>'+inp('oz_ay'+i, 0, '0.1', 58)+'</td>'+
       '<td>'+sec('oz_ds1'+i, DS, d[4])+'</td>'+
@@ -25059,6 +25153,17 @@ function kur(){
       '<td id="oz_gun'+i+'">—</td><td id="oz_nf'+i+'">—</td>'+
       '<td id="oz_dum'+i+'">—</td><td id="oz_yf'+i+'">—</td>'+
       '<td id="oz_kr'+i+'" style="white-space:nowrap"></td></tr>';
+  }
+  var jr = '';
+  for (i = 0; i < NZ; i++){
+    /* oz_jf: önceki sürümün zon tablosundaki jet fan adedi — yalnız eski .json'dan değer alır */
+    jr += '<tr id="oj_tr'+i+'">'+
+      '<td id="oj_kat'+i+'" style="text-align:left">—</td><td id="oj_zon'+i+'" style="text-align:left">—</td>'+
+      '<td id="oj_alan'+i+'">—</td>'+
+      /* adet tipten önce: telefonda yana kaydırmadan yazılabilsin */
+      '<td>'+inp('oj_n1'+i, 0, '1', 52)+'<input id="oz_jf'+i+'" type="hidden" value=""></td><td>'+jfSec('oj_t1'+i)+'</td>'+
+      '<td>'+inp('oj_n2'+i, 0, '1', 52)+'</td><td>'+jfSec('oj_t2'+i)+'</td>'+
+      '<td id="oj_top'+i+'">—</td><td id="oj_it'+i+'">—</td><td id="oj_gu'+i+'">—</td></tr>';
   }
   var sr = '';
   function saftSatir(tip, ad, j){
@@ -25094,8 +25199,14 @@ function kur(){
     '#sec_otopark .xz-altbas:first-of-type{margin-top:4px}'+
     '#sec_otopark tr.xz-kullanilmiyor > td{opacity:.5}'+
     '#sec_otopark .xz-toplam{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}'+
+    '#sec_otopark tr.xz-jfyok{display:none}'+
+    '#sec_otopark table.xz-lejant td{vertical-align:middle}'+
+    /* lejant renkleri çizimdekiyle aynı; koyu zeminde okunsun diye biraz açılır */
+    '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #sec_otopark table.xz-lejant b,'+
+      ':root:not([data-theme="light"]) #sec_otopark table.xz-lejant svg{filter:brightness(1.5)}}'+
+    ':root[data-theme="dark"] #sec_otopark table.xz-lejant b,:root[data-theme="dark"] #sec_otopark table.xz-lejant svg{filter:brightness(1.5)}'+
     '@media print{'+
-      '#sec_otopark .xz-ekran,#sec_otopark .xz-yazdirma,#sec_otopark .xz-exc{display:none!important}'+
+      '#sec_otopark .xz-ekran,#sec_otopark .xz-yazdirma,#sec_otopark .xz-exc,#sec_otopark .xz-baskigizle{display:none!important}'+
       '#sec_otopark .xz-blok{break-inside:avoid;page-break-inside:avoid}'+
       '#sec_otopark .xz-altbas{break-after:avoid;page-break-after:avoid}'+
       '#sec_otopark table.xz-baski{display:table!important;width:100%!important;border-collapse:collapse;'+
@@ -25106,6 +25217,7 @@ function kur(){
       '#sec_otopark table.xz-baski .s{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}'+
       '#sec_otopark table.xz-baski tfoot td{font-weight:700;border-top:.7pt solid #888;border-bottom:none}'+
       '#sec_otopark tr.xz-bos,#sec_otopark tr.xz-kullanilmiyor{display:none!important}'+
+      '#sec_otopark table.xz-lejant b,#sec_otopark table.xz-lejant svg{filter:none!important}'+
       '#xz-otopark .cz{max-height:126mm}'+
       '#sec_otopark .xz-altbas{margin:9px 0 3px;font-size:8.5pt;color:#333}'+
       '#sec_otopark .xz-toplam .chip{font-size:8pt}'+
@@ -25135,7 +25247,7 @@ function kur(){
 
   '<div class="card"><h3>Zonlar</h3><div class="wrap xz-ekran"><table>'+
    '<thead><tr><th rowspan="2">Kat</th><th rowspan="2">Zon</th><th rowspan="2">Alan<br>m²</th>'+
-   '<th rowspan="2">Yük.<br>m</th><th rowspan="2">Jet fan<br>adet</th><th colspan="2">Giriş açıklığı</th>'+
+   '<th rowspan="2">Yük.<br>m</th><th colspan="2">Giriş açıklığı</th>'+
    '<th colspan="4">Duman tahliye şaftı</th><th colspan="4">Taze hava şaftı</th>'+
    '<th rowspan="2">Hacim<br>m³</th><th rowspan="2">Açıklık<br>m³/h</th>'+
    '<th colspan="2">Normal zaman m³/h</th><th colspan="2">Yangın anı m³/h</th><th rowspan="2"></th></tr>'+
@@ -25145,7 +25257,7 @@ function kur(){
    '<th>havalandırma</th><th>taze — fandan</th><th>duman</th><th>taze — fandan</th></tr></thead>'+
    '<tbody>'+zr+'</tbody>'+
    '<tfoot><tr><td>TOPLAM</td><td id="op_zonsay">—</td><td id="op_talan">—</td><td></td>'+
-   '<td id="op_jftop">—</td><td colspan="10"></td>'+
+   '<td colspan="10"></td>'+
    '<td id="op_hacim">—</td><td id="op_gdebi">—</td><td id="op_gundebi">—</td><td id="op_nftop">—</td>'+
    '<td id="op_tdum">—</td><td></td><td></td></tr></tfoot></table></div>'+
    '<table id="op_zonbaski" class="xz-baski"></table>'+
@@ -25155,8 +25267,42 @@ function kur(){
    'Farklı dağılım için <b>pay %</b> alanına <b>60/40</b> ya da <b>50/30/20</b> yazın (ondalık gerekirse '+
    '<b>nokta</b>: 33.3). Eksik yazılan pay kalan şaftlara eşit dağıtılır; toplam 100 değilse oranlar '+
    'korunarak normalleştirilir ve uyarı verilir. Yangın anında zonun bağlı olduğu şaftların hepsi kendi payıyla çalışır.<br>'+
-   '<b>Jet fan adedi</b> zon başına girilir; ekipman listesine ve Excel\'e aktarılır. '+
-   'Giriş açıklığı yüksekliği 0 bırakılırsa zon yüksekliği alınır.</div></div>'+
+   'Giriş açıklığı yüksekliği 0 bırakılırsa zon yüksekliği alınır. Jet fanlar bir sonraki kartta zon başına girilir.</div></div>'+
+
+  /* öntanımlı tip yalnız girişi kolaylaştırır; PDF'teki tablo her zonun gerçek tipini yazar */
+  '<div class="card"><h3>Jet Fanlar</h3><div class="xz-ekran"><div class="grid">'+
+     SEL('oj_tip','Öntanımlı jet fan (model · yön)', JF.map(function(j){ return j.ad; }), JF_VARS)+
+   '</div></div>'+
+   '<div class="xz-altbas xz-ekran">Zon başına jet fan — satırlar Zonlar tablosundan gelir</div>'+
+   '<div class="wrap xz-ekran"><table>'+
+   '<thead><tr><th rowspan="2">Kat</th><th rowspan="2">Zon</th><th rowspan="2">Alan<br>m²</th>'+
+   '<th colspan="2">Jet fan 1</th><th colspan="2">Jet fan 2</th>'+
+   '<th rowspan="2">Toplam<br>adet</th><th rowspan="2">İtki<br>N</th><th rowspan="2">Motor gücü<br>kW</th></tr>'+
+   '<tr><th>adet</th><th>tip</th><th>adet</th><th>tip</th></tr></thead>'+
+   '<tbody>'+jr+'</tbody>'+
+   '<tfoot><tr><td>TOPLAM</td><td colspan="6"></td><td id="oj_adet">—</td><td id="oj_itki">—</td>'+
+   '<td id="oj_guc">—</td></tr></tfoot></table></div>'+
+   '<div id="oj_bosnot"></div>'+
+   '<table id="oj_baski" class="xz-baski"></table>'+
+   '<div id="oj_lejblok" class="xz-blok"><div class="xz-altbas">Jet fan lejantı</div>'+
+   '<div class="wrap"><table class="xz-lejant">'+
+   '<thead><tr><th></th><th>Cihaz</th><th>Yön</th><th>İtki kuvveti<br>N</th><th>Devir sayısı<br>d/d</th>'+
+   '<th>Motor gücü<br>kW</th><th>Adet</th><th>Toplam güç<br>kW</th></tr></thead><tbody>'+
+   JF.map(function(j, k){
+     return '<tr id="oj_ltr'+k+'"><td>'+jfSimge(j)+'</td>'+
+       '<td style="text-align:left;white-space:nowrap"><b style="color:'+j.renk+'">'+j.model+'</b></td>'+
+       '<td style="white-space:nowrap">'+j.yon+'</td>'+
+       '<td style="white-space:nowrap">'+cift(j.itki)+'</td>'+
+       '<td style="white-space:nowrap">'+cift(j.devir)+'</td>'+
+       '<td style="white-space:nowrap">'+cift(j.guc)+'</td>'+
+       '<td id="oj_lad'+k+'">0</td><td id="oj_lgu'+k+'">—</td></tr>';
+   }).join('')+
+   '</tbody><tfoot><tr><td></td><td colspan="5">TOPLAM</td><td id="oj_ladt">0</td><td id="oj_lgut">—</td></tr></tfoot>'+
+   '</table></div></div>'+
+   '<div class="note"><b>Kolay giriş:</b> öntanımlı jet fanı bir kez seçin, zon satırlarına yalnız <b>adet</b> yazın. '+
+   'Bir zonda başka tip gerekiyorsa satırdaki listeden seçin; iki farklı tip için <b>Jet fan 2</b> yuvasını kullanın. '+
+   'İtki, devir ve motor gücü <b>yüksek / düşük devir</b> değerleridir; toplam itki ve güç yüksek devirle hesaplanır. '+
+   'Lejanttaki adetler çizimdeki lejant tablosuna aynen aktarılabilir; kullanılmayan tipler soluk görünür ve PDF\'e basılmaz.</div></div>'+
 
   '<div class="card"><h3>Şaft Tablosu — Nihai Fan Debileri</h3><div class="wrap xz-ekran"><table>'+
    '<thead><tr><th>Şaft</th><th>Bağlı zonlar</th><th>Açıklık<br>elemanı</th><th>Fan<br>ad.</th>'+
@@ -25208,7 +25354,7 @@ function kur(){
    '<div class="xz-altbas">Eleman kabulleri</div>'+
    '<div class="wrap"><table>'+
    '<thead><tr><th>Eleman</th><th>Hız<br>m/s</th><th>Serbest<br>alan</th><th>k<br>(ΔP = k·v²)</th>'+
-   '<th>Ölçü 1<br>mm</th><th>Yerel kayıp<br>Pa</th></tr></thead><tbody>'+
+   '<th>Genişlik<br>mm (sabit)</th><th>Yerel kayıp<br>Pa</th></tr></thead><tbody>'+
    EL.map(function(e){
      return '<tr><td style="text-align:left">'+e[1]+'</td>'+
        '<td>'+inp('oe_v'+e[0], e[4], '0.5', 58)+'</td>'+
@@ -25218,15 +25364,19 @@ function kur(){
        '<td id="oe_p'+e[0]+'">—</td></tr>';
    }).join('')+
    '</tbody></table></div>'+
+   /* pay, basılan damper ölçüsünün içinde zaten görünür — alan PDF'e ayrıca basılmaz */
+   '<div class="xz-ekran"><div class="grid" style="margin-top:12px">'+
+     F('oe_dpay','Damper payı — yalnız ölçü yazımında, hesaba katılmaz','200','mm','50')+
+   '</div></div>'+
    '<div class="xz-altbas">Seçilen şaftın basınç kaybı</div>'+
    '<div class="grid">'+
-     SEL('op_kesitsaft','Hangi şaft için', DS.concat(TS), 'D1')+
+     SEL('op_kesitsaft','Hangi şaft için', DS.concat(TS), 'DT1')+
      F('op_eps','Yüzey pürüzlülüğü','0.15','mm')+
      F('op_nu','Kinematik viskozite (×10⁻⁶)','15.1','m²/s')+
    '</div>'+
    '<div class="wrap" style="margin-top:12px"><table>'+
    '<thead><tr><th>Eleman</th><th>Adet</th><th>Debi<br>m³/h</th><th>Hız<br>m/s</th><th>Serbest<br>alan</th>'+
-   '<th>Alan<br>m²</th><th>Ölçü<br>mm</th><th>Yerel<br>Pa</th><th>Sürtünme<br>Pa</th><th>Toplam<br>Pa</th></tr></thead><tbody>'+
+   '<th>Alan<br>m²</th><th>Ölçü G x Y<br>mm</th><th>Yerel<br>Pa</th><th>Sürtünme<br>Pa</th><th>Toplam<br>Pa</th></tr></thead><tbody>'+
    ['ac','pj','sf'].map(function(r){
      return '<tr><td style="text-align:left" id="ok_'+r+'_ad">—</td><td id="ok_'+r+'_n">—</td>'+
        '<td id="ok_'+r+'_q">—</td><td id="ok_'+r+'_v">—</td><td id="ok_'+r+'_s">—</td>'+
@@ -25239,11 +25389,12 @@ function kur(){
    'şaftın en büyük debili açıklığını gösterir; şaft tek kata açılıyorsa tel fens, birden fazla kata '+
    'açılıyorsa damperdir. Ortak kullanılan açıklığın debisi yangında o kattaki zonların en büyüğü, normal '+
    'işletmede toplamıdır. Şaft satırında sürtünme ΔP = f·(L ⁄ Dh)·ρ·v² ⁄ 2, Dh = 2ab ⁄ (a+b), ρ = 1,2 kg/m³. '+
-   'Ölçü 2, Ölçü 1 sabit tutularak alandan bulunur ve 50 mm\'ye yukarı yuvarlanır.</div></div>'+
+   'Ölçüler genişlik x yükseklik: genişlik sabit, yükseklik alandan bulunup 50 mm\'ye yukarı yuvarlanır; '+
+   'damperde (genişlik+pay)xyükseklik yazılır, pay hesaba katılmaz.</div></div>'+
 
   '<div class="card"><h3>Ekipman Listesi — Fanlar</h3>'+
    '<div class="xz-exc"><button type="button" onclick="xzOtoparkExcel(this)">Excel olarak indir (.xlsx)</button>'+
-   '<span>Fan, şaft, damper, tel fens, panjur, jet fan ve zon sayfaları</span></div>'+
+   '<span>Fan, şaft, damper, tel fens, panjur, jet fan, jet fan lejantı ve zon sayfaları</span></div>'+
    '<div id="op_eqtoplam" class="xz-toplam"></div>'+
    '<div class="wrap"><table id="op_eqfan"></table></div>'+
    '<div class="note">Fiyat sütunları, Proje panelindeki <b>“Raporda fiyat / maliyet bilgisi gösterme”</b> '+
@@ -25253,13 +25404,14 @@ function kur(){
    '<div class="xz-blok"><div class="xz-altbas">Damperler — şaftın açıldığı her katta</div>'+
    '<div class="wrap"><table id="op_eqdamper"></table></div></div>'+
    '<div class="xz-blok"><div class="xz-altbas">Tel fensler — tek kata açılan şaftlarda</div>'+
-   '<div class="wrap"><table id="op_eqtelfens"></table></div></div></div>'+
+   '<div class="wrap"><table id="op_eqtelfens"></table></div></div>'+
+   '<div class="note">Ölçüler genişlik x yükseklik (mm). Damperde parantez içindeki <b>+pay</b> yalnız damperin '+
+   'kaplayacağı yeri gösterir; alan, hız ve basınç hesabına katılmaz.</div></div>'+
 
-  '<div class="card"><h3>Ekipman Listesi — Panjur ve Jet Fan</h3>'+
+  '<div class="card"><h3>Ekipman Listesi — Panjur</h3>'+
    '<div class="xz-blok"><div class="xz-altbas">Panjurlar — şaft başında, zeminde</div>'+
    '<div class="wrap"><table id="op_eqpanjur"></table></div></div>'+
-   '<div class="xz-blok"><div class="xz-altbas">Jet fanlar</div>'+
-   '<div class="wrap"><table id="op_eqjet"></table></div></div></div>'+
+   '<div class="note">Jet fanların tip bazında listesi (adet ve toplam güç) <b>Jet Fanlar</b> kartındaki lejanttadır.</div></div>'+
 
   '<div class="card"><h3>Şema</h3><div id="xz-otopark" class="czbox"></div>'+
    '<div class="note">Zonlar alanlarıyla orantılı çizilir. Kırmızı borular duman tahliye, yeşil borular taze '+
@@ -25314,19 +25466,33 @@ function tablo(bas, satirlar, sagda, alt, tekSatir){
 /* ------------------------------------------------------------------ CALC */
 function hesapla(){
   var i;
+  eskiAdlariKabulEt();
+  /* önceki sürümle kaydedilmiş projede zon başına jet fan adedi oz_jf alanındaydı: yüklenince
+     Jet Fanlar kartının 1. yuvasına öntanımlı tiple taşınır (eski kayıtta o kartın alanları yoktur) */
+  for (i = 0; i < NZ; i++){
+    var eskiJf = $('oz_jf'+i);
+    if (!eskiJf || String(eskiJf.value).trim() === '') continue;
+    if ($('oj_n1'+i)) $('oj_n1'+i).value = Math.max(0, Math.round(V('oz_jf'+i)));
+    if ($('oj_t1'+i)) $('oj_t1'+i).value = JF_OT;
+    if ($('oj_n2'+i)) $('oj_n2'+i).value = 0;
+    eskiJf.value = '';
+  }
   var ticari = S('op_yontem').indexOf('Ticari') === 0;
   var ach = V('op_ach') > 0 ? V('op_ach') : 10;
   var oran = (V('op_oran') > 0 ? V('op_oran') : 70)/100;
   var ahiz = V('op_acikhiz') > 0 ? V('op_acikhiz') : 2;
   var zonMax = V('op_zonmax') > 0 ? V('op_zonmax') : 5000;
 
-  var zon = [], talan = 0, thac = 0, tgun = 0, tdum = 0, taq = 0, tnf = 0, tjf = 0;
+  var zon = [], talan = 0, thac = 0, tgun = 0, tdum = 0, taq = 0, tnf = 0, tjf = 0, tjfItki = 0, tjfGuc = 0;
+  var jfVar = jfBul(S('oj_tip')) || jfBul(JF_VARS);
+  var jfSay = JF.map(function(){ return 0; });
   var katSira = [], katYuk = {};
   var kritik = 0, kritikAd = '—';
   for (i = 0; i < NZ; i++){
     var alan = V('oz_alan'+i), yuk = V('oz_yuk'+i);
     var hac = alan*yuk;
     sinif('oz_tr'+i, 'xz-bos', !(alan > 0));
+    sinif('oj_tr'+i, 'xz-jfyok', !(alan > 0));
     if (!(alan > 0)){
       ['hac','aq','gun','nf','dum','yf'].forEach(function(k){ put('oz_'+k+i, '—'); });
       if ($('oz_kr'+i)) $('oz_kr'+i).innerHTML = '';
@@ -25338,22 +25504,29 @@ function hesapla(){
     var aq = V('oz_ae'+i)*ay*ahiz*3600;
     var nf = Math.max(gun*oran - aq, 0);
     var yf = Math.max(dum*oran - aq, 0);
-    var jf = Math.max(0, Math.round(V('oz_jf'+i)));
     var kat = $('oz_kat'+i) ? String($('oz_kat'+i).value).trim() : '';
     var zad = $('oz_zon'+i) ? String($('oz_zon'+i).value).trim() : '';
     var ad = (kat ? kat : 'Kat ?') + (zad ? ' / ' + zad : '');
+    var jfl = jetFanlar(i, jfVar), jf = jfl.adet;
+    jfl.liste.forEach(function(x){ jfSay[JF.indexOf(x.j)] += x.adet; });
+    put('oj_kat'+i, kac(kat || '—')); put('oj_zon'+i, kac(zad || '—')); put('oj_alan'+i, alan, 0);
+    put('oj_top'+i, jf > 0 ? fmt(jf,0) : '—');
+    put('oj_it'+i, jf > 0 ? fmt(jfl.itki,0) : '—');
+    put('oj_gu'+i, jf > 0 ? fmt(jfl.guc,2) : '—');
     var kadi = kat || '(kat adı yok)';
     if (katSira.indexOf(kadi) < 0) katSira.push(kadi);
     if (!(katYuk[kadi] > yuk)) katYuk[kadi] = yuk;
     var z = { i:i, kat:kat, katIdx:katSira.indexOf(kadi), zon:zad, ad:ad,
-      alan:alan, yuk:yuk, hac:hac, gun:gun, dum:dum, aq:aq, nf:nf, yf:yf, jf:jf,
+      alan:alan, yuk:yuk, hac:hac, gun:gun, dum:dum, aq:aq, nf:nf, yf:yf,
+      jf:jf, jfListe:jfl.liste, jfItki:jfl.itki, jfGuc:jfl.guc,
       dp: paylar([S('oz_ds1'+i), S('oz_ds2'+i), S('oz_ds3'+i)], S('oz_dp'+i)),
       tp: paylar([S('oz_ts1'+i), S('oz_ts2'+i), S('oz_ts3'+i)], S('oz_tp'+i)) };
     zon.push(z);
     put('oz_hac'+i, hac, 1); put('oz_aq'+i, aq > 0 ? fmt(aq,0) : '—');
     put('oz_gun'+i, gun, 0); put('oz_nf'+i, nf, 0);
     put('oz_dum'+i, dum, 0); put('oz_yf'+i, yf, 0);
-    talan += alan; thac += hac; tgun += gun; tdum += dum; taq += aq; tnf += nf; tjf += jf;
+    talan += alan; thac += hac; tgun += gun; tdum += dum; taq += aq; tnf += nf;
+    tjf += jf; tjfItki += jfl.itki; tjfGuc += jfl.guc;
     if (dum > kritik){ kritik = dum; kritikAd = ad; }
   }
   var payYazi = function(pl){
@@ -25371,7 +25544,17 @@ function hesapla(){
     if ($('oz_kr'+z.i)) $('oz_kr'+z.i).innerHTML = c;
   });
   put('op_zonsay', zon.length, 0); put('op_talan', talan, 1); put('op_hacim', thac, 1);
-  put('op_jftop', tjf, 0);
+  put('oj_adet', tjf > 0 ? fmt(tjf,0) : '—'); put('oj_itki', tjf > 0 ? fmt(tjfItki,0) : '—');
+  put('oj_guc', tjf > 0 ? fmt(tjfGuc,2) : '—');
+  JF.forEach(function(j, k){
+    sinif('oj_ltr'+k, 'xz-kullanilmiyor', !(jfSay[k] > 0));
+    put('oj_lad'+k, jfSay[k], 0);
+    put('oj_lgu'+k, jfSay[k] > 0 ? fmt(jfSay[k]*j.guc[0], 2) : '—');
+  });
+  put('oj_ladt', tjf, 0); put('oj_lgut', tjf > 0 ? fmt(tjfGuc,2) : '—');
+  sinif('oj_lejblok', 'xz-baskigizle', !(tjf > 0));
+  if ($('oj_bosnot')) $('oj_bosnot').innerHTML = zon.length ? '' :
+    '<div class="note w" style="margin-top:10px">Önce <b>Zonlar</b> tablosuna alanı olan bir zon girin; jet fan satırları oradan gelir.</div>';
   put('op_gundebi', tgun, 0); put('op_nftop', tnf, 0); put('op_gdebi', taq, 0); put('op_tdum', tdum, 0);
   put('op_kritikzon', kritikAd); put('op_kritikdebi', kritik, 0);
   put('op_normihtiyac', tgun, 0); put('op_konut', talan*6, 0); put('op_ticari', talan*12, 0);
@@ -25559,21 +25742,21 @@ function hesapla(){
   /* -------- seçilen şaftın basınç kaybı tablosu -------- */
   var ss = S('op_kesitsaft'), g0 = null, hepsi = dSaft.concat(tSaft);
   for (i = 0; i < hepsi.length; i++) if (hepsi[i].ad === ss) g0 = hepsi[i];
-  function okSatir(r, ad, adet, q, bo, y, f, t){
+  function okSatir(r, ad, adet, q, bo, y, f, t, damper){
     put('ok_'+r+'_ad', ad); put('ok_'+r+'_n', adet);
     put('ok_'+r+'_q', q > 0 ? fmt(q,0) : '—');
     put('ok_'+r+'_v', bo ? fmt(bo.v,2) : '—'); put('ok_'+r+'_s', bo ? fmt(bo.s,2) : '—');
     put('ok_'+r+'_a', bo && bo.A > 0 ? fmt(bo.A,3) : '—');
-    put('ok_'+r+'_o', bo && bo.o2y > 0 ? fmt(bo.o1,0) + ' × ' + fmt(bo.o2y,0) : '—');
+    put('ok_'+r+'_o', olcuYaz(bo, damper));
     put('ok_'+r+'_y', y, 1); put('ok_'+r+'_f', f === null ? '—' : fmt(f,1)); put('ok_'+r+'_t', t, 1);
   }
   if (g0 && g0.tasarim > 0){
     var qm = g0.acik.reduce(function(m, o){ return Math.max(m, o.q); }, 0);
-    okSatir('ac', TUR_AD[g0.acTur] + ' (en büyük açıklık)', fmt(g0.acik.length,0), qm, g0.bAc, g0.dpAc, null, g0.dpAc);
-    okSatir('pj', 'Panjur — şaft başı', '1', g0.tasarim, g0.bPj, g0.dpPj, null, g0.dpPj);
+    okSatir('ac', TUR_AD[g0.acTur] + ' (en büyük açıklık)', fmt(g0.acik.length,0), qm, g0.bAc, g0.dpAc, null, g0.dpAc, g0.acTur === 'damper');
+    okSatir('pj', 'Panjur — şaft başı', '1', g0.tasarim, g0.bPj, g0.dpPj, null, g0.dpPj, false);
     put('ok_sf_ad', 'Şaft'); put('ok_sf_n', '1'); put('ok_sf_q', g0.tasarim, 0);
     put('ok_sf_v', g0.v, 2); put('ok_sf_s', '1,00'); put('ok_sf_a', g0.A, 3);
-    put('ok_sf_o', fmt(g0.a,0) + ' × ' + fmt(g0.b,0));
+    put('ok_sf_o', Math.round(g0.a) + 'x' + Math.round(g0.b));
     put('ok_sf_y', g0.yerelSaft, 1); put('ok_sf_f', g0.pf, 1); put('ok_sf_t', g0.yerelSaft + g0.pf, 1);
     put('ok_top', fmt(g0.ham,1) + ' Pa · <b>' + fmt(g0.bas,0) + ' Pa</b>');
   } else {
@@ -25593,17 +25776,21 @@ function hesapla(){
       acik: g.acik.length + ' × ' + TUR_AD[g.acTur].toLowerCase() });
     g.acik.forEach(function(o){
       var zonAd = o.zonlar.map(function(z){ return z.zon || '—'; }).join(', ') + (o.zonlar.length > 1 ? ' (ortak)' : '');
-      ek[g.acTur].push({ saft:g.ad, gorev:g.gorev, kat:o.kat || '—', zon:zonAd, debi:o.q, b:o.b, adet:1 });
+      ek[g.acTur].push({ saft:g.ad, gorev:g.gorev, kat:o.kat || '—', zon:zonAd, debi:o.q, b:o.b,
+        olcu:olcuYaz(o.b, g.acTur === 'damper'), adet:1 });
     });
-    ek.panjur.push({ saft:g.ad, gorev:g.gorev, konum:'Şaft başı — zemin', debi:g.tasarim, b:g.bPj, adet:1 });
+    ek.panjur.push({ saft:g.ad, gorev:g.gorev, konum:'Şaft başı — zemin', debi:g.tasarim, b:g.bPj,
+      olcu:olcuYaz(g.bPj, false), adet:1 });
   });
-  zon.forEach(function(z){ if (z.jf > 0) ek.jet.push({ kat:z.kat || '—', zon:z.zon || '—', alan:z.alan, adet:z.jf }); });
+  zon.forEach(function(z){ z.jfListe.forEach(function(x){
+    ek.jet.push({ kat:z.kat || '—', zon:z.zon || '—', alan:z.alan, j:x.j, adet:x.adet });
+  }); });
+  ek.jetTip = JF.map(function(j, k){ return { j:j, adet:jfSay[k] }; });
   var say = function(l){ return l.reduce(function(a, x){ return a + (x.adet || 0); }, 0); };
   ek.toplam = {
     fanD: dKul.reduce(function(a, g){ return a + g.n; }, 0), fanT: tKul.reduce(function(a, g){ return a + g.n; }, 0),
     damper: say(ek.damper), telfens: say(ek.telfens), panjur: say(ek.panjur), jet: say(ek.jet)
   };
-  var olc = function(b){ return b && b.o2y > 0 ? fmt(b.o1,0) + ' × ' + fmt(b.o2y,0) : '—'; };
   var T = ek.toplam;
   $('op_eqtoplam').innerHTML =
     '<span class="chip">' + T.fanD + ' duman tahliye fanı</span>' +
@@ -25620,40 +25807,48 @@ function hesapla(){
     return r;
   }), fiyatGizli ? [2,3,4] : [2,3,4,6,7],
     ek.fan.length ? ['TOPLAM','',fmt(T.fanD + T.fanT,0),'','',''].concat(fiyatGizli ? [] : ['', fiyat > 0 ? fmt(fiyat,0) : '—']) : null);
-  var eBas = ['Şaft','Görev','Kat','Zon','Debi<br>m³/h','Ölçü<br>mm','Adet'];
+  var eBas = ['Şaft','Görev','Kat','Zon','Debi<br>m³/h','Ölçü G x Y<br>mm','Adet'];
   var eSat = function(l){ return l.map(function(x){
-    return [x.saft, x.gorev, kac(x.kat), kac(x.zon), fmt(x.debi,0), olc(x.b), fmt(x.adet,0)]; }); };
-  $('op_eqdamper').innerHTML = tablo(eBas, eSat(ek.damper), [4,6], ek.damper.length ? ['TOPLAM','','','','','',fmt(T.damper,0)] : null);
-  $('op_eqtelfens').innerHTML = tablo(eBas, eSat(ek.telfens), [4,6], ek.telfens.length ? ['TOPLAM','','','','','',fmt(T.telfens,0)] : null);
-  $('op_eqpanjur').innerHTML = tablo(['Şaft','Görev','Konum','Debi<br>m³/h','Ölçü<br>mm','Adet'],
-    ek.panjur.map(function(x){ return [x.saft, x.gorev, x.konum, fmt(x.debi,0), olc(x.b), fmt(x.adet,0)]; }),
-    [3,5], ek.panjur.length ? ['TOPLAM','','','','',fmt(T.panjur,0)] : null);
-  $('op_eqjet').innerHTML = tablo(['Kat','Zon','Alan<br>m²','Jet fan<br>adet'],
-    ek.jet.map(function(x){ return [kac(x.kat), kac(x.zon), fmt(x.alan,0), fmt(x.adet,0)]; }),
-    [2,3], ek.jet.length ? ['TOPLAM','','',fmt(T.jet,0)] : null);
+    return [x.saft, x.gorev, kac(x.kat), kac(x.zon), fmt(x.debi,0), x.olcu, fmt(x.adet,0)]; }); };
+  $('op_eqdamper').innerHTML = tablo(eBas, eSat(ek.damper), [4,6],
+    ek.damper.length ? ['TOPLAM','','','','','',fmt(T.damper,0)] : null, [5]);
+  $('op_eqtelfens').innerHTML = tablo(eBas, eSat(ek.telfens), [4,6],
+    ek.telfens.length ? ['TOPLAM','','','','','',fmt(T.telfens,0)] : null, [5]);
+  $('op_eqpanjur').innerHTML = tablo(['Şaft','Görev','Konum','Debi<br>m³/h','Ölçü G x Y<br>mm','Adet'],
+    ek.panjur.map(function(x){ return [x.saft, x.gorev, x.konum, fmt(x.debi,0), x.olcu, fmt(x.adet,0)]; }),
+    [3,5], ek.panjur.length ? ['TOPLAM','','','','',fmt(T.panjur,0)] : null, [4]);
 
   /* -------- PDF için dar özet tablolar -------- */
   $('op_zonbaski').innerHTML = tablo(
-    ['Kat','Zon','Alan<br>m²','Yük.<br>m','Jet fan','Duman şaftları','Taze hava şaftları','Açıklık<br>m³/h',
+    ['Kat','Zon','Alan<br>m²','Yük.<br>m','Duman şaftları','Taze hava şaftları','Açıklık<br>m³/h',
      'Normal hav.<br>m³/h','Yangın duman<br>m³/h','Yangın taze<br>fandan m³/h'],
     zon.map(function(z){
-      return [kac(z.kat || '—'), kac(z.zon || '—'), fmt(z.alan,0), fmt(z.yuk,2), z.jf ? fmt(z.jf,0) : '—',
+      return [kac(z.kat || '—'), kac(z.zon || '—'), fmt(z.alan,0), fmt(z.yuk,2),
         payYazi(z.dp) || '—', payYazi(z.tp) || '—', z.aq > 0 ? fmt(z.aq,0) : '—',
         fmt(z.gun,0), fmt(z.dum,0), fmt(z.yf,0)];
-    }), [2,3,4,7,8,9,10],
-    ['TOPLAM', fmt(zon.length,0) + ' zon', fmt(talan,0), '', tjf ? fmt(tjf,0) : '—', '', '',
+    }), [2,3,6,7,8,9],
+    ['TOPLAM', fmt(zon.length,0) + ' zon', fmt(talan,0), '', '', '',
      taq > 0 ? fmt(taq,0) : '—', fmt(tgun,0), fmt(tdum,0), fmt(zon.reduce(function(a, z){ return a + z.yf; }, 0),0)]);
+  var jfZon = zon.filter(function(z){ return z.jf > 0; });
+  $('oj_baski').innerHTML = tablo(['Kat','Zon','Alan<br>m²','Jet fanlar','Adet','İtki<br>N','Motor gücü<br>kW'],
+    jfZon.map(function(z){
+      return [kac(z.kat || '—'), kac(z.zon || '—'), fmt(z.alan,0),
+        z.jfListe.map(function(x){ return x.adet + ' × ' + x.j.ad; }).join('<br>'),
+        fmt(z.jf,0), fmt(z.jfItki,0), fmt(z.jfGuc,2)];
+    }), [2,4,5,6],
+    jfZon.length ? ['TOPLAM', fmt(jfZon.length,0) + ' zon', '', '', fmt(tjf,0), fmt(tjfItki,0), fmt(tjfGuc,2)] : null, [3]);
   $('op_saftbaski').innerHTML = tablo(
-    ['Şaft','Bağlı zonlar','Açıklık','Tasarım<br>m³/h','Belirleyen','Kesit<br>a × b mm','Hız<br>m/s','Boy<br>m',
+    ['Şaft','Bağlı zonlar','Açıklık','Tasarım<br>m³/h','Belirleyen','Kesit<br>a x b mm','Hız<br>m/s','Boy<br>m',
      'Karşı bas.<br>Pa','Fan<br>adet × m³/h'],
     kul.map(function(g){
       return ['<b>' + g.ad + '</b>', kac(g.zonlar.join(', ')), g.acik.length + ' × ' + TUR_AD[g.acTur].toLowerCase(),
-        '<b>' + fmt(g.tasarim,0) + '</b>', kac(g.belirleyen), fmt(g.a,0) + ' × ' + fmt(g.b,0),
+        '<b>' + fmt(g.tasarim,0) + '</b>', kac(g.belirleyen), Math.round(g.a) + 'x' + Math.round(g.b),
         fmt(g.v,2), fmt(g.L,2), fmt(g.bas,0), g.n + ' × ' + fmt(g.perFan,0)];
     }), [3,6,7,8,9], null, [0,2,5]);
 
   SON = { zon:zon, dKul:dKul, tKul:tKul, ek:ek, fiyatGizli:fiyatGizli, toplam:{
-    alan:talan, hacim:thac, normal:tgun, duman:tdum, acik:taq, jet:tjf, dumanKurulu:dTop, tazeKurulu:tTop, fiyat:fiyat } };
+    alan:talan, hacim:thac, normal:tgun, duman:tdum, acik:taq, jet:tjf, jetItki:tjfItki, jetGuc:tjfGuc,
+    dumanKurulu:dTop, tazeKurulu:tTop, fiyat:fiyat }, damperPay: Math.round(Math.max(0, V('oe_dpay'))) };
 
   /* -------- manuel tablo (özgün yardımcılarla) -------- */
   var mp = opKesitHesap('opm', V('opm_th'), V('opm_dt'));
@@ -25949,10 +26144,15 @@ function excelSayfalari(son){
   ozet.push([]);
   ozet.push([H('Büyüklük'), H('Değer'), H('Birim')]);
   [['Toplam zon alanı', r1(son.toplam.alan), 'm²'], ['Duman tahliyesi — toplam kurulu', Math.round(son.toplam.dumanKurulu), 'm³/h'],
-   ['Taze hava — toplam kurulu', Math.round(son.toplam.tazeKurulu), 'm³/h'], ['Giriş açıklıkları', Math.round(son.toplam.acik), 'm³/h']]
+   ['Taze hava — toplam kurulu', Math.round(son.toplam.tazeKurulu), 'm³/h'], ['Giriş açıklıkları', Math.round(son.toplam.acik), 'm³/h'],
+   ['Jet fanlar — toplam itki (yüksek devir)', Math.round(son.toplam.jetItki), 'N'],
+   ['Jet fanlar — toplam motor gücü (yüksek devir)', r2(son.toplam.jetGuc), 'kW']]
     .forEach(function(r){ ozet.push(r); });
   if (!son.fiyatGizli && son.toplam.fiyat > 0) ozet.push(['Toplam fan liste fiyatı', Math.round(son.toplam.fiyat), 'USD']);
-  sayfalar.push({ ad:'Özet', gen:[34, 18, 10], satir:ozet, dondur:false, filtre:false });
+  ozet.push([]);
+  ozet.push(['Ölçüler genişlik x yükseklik (mm).' + (son.damperPay > 0 ? ' Damper ölçüsünde parantez içindeki +' +
+    son.damperPay + ' mm yalnız damperin kaplayacağı yeri gösterir; hesaba ve Genişlik sütununa katılmaz.' : '')]);
+  sayfalar.push({ ad:'Özet', gen:[46, 18, 10], satir:ozet, dondur:false, filtre:false });
 
   var fb = [H('Şaft'), H('Görev'), H('Adet'), H('Fan başına debi (m³/h)'), H('Karşı basınç (Pa)'), H('Seçilen model'), H('Düzen')];
   if (!son.fiyatGizli) fb = fb.concat([H('Birim fiyat (USD)'), H('Toplam fiyat (USD)')]);
@@ -25972,31 +26172,48 @@ function excelSayfalari(son){
   });
   sayfalar.push({ ad:'Şaftlar', gen:[8,15,22,36,16,18,24,12,12,11,10,13,15], satir:sr });
 
+  /* ölçü metni ekrandakiyle aynı (damperde payla); Genişlik / Yükseklik sütunları paysız sayılar */
   var eBas = [H('Şaft'), H('Görev'), H('Kat'), H('Zon'), H('Debi (m³/h)'), H('Hız (m/s)'), H('Serbest alan'),
-    H('Brüt alan (m²)'), H('Ölçü 1 (mm)'), H('Ölçü 2 (mm)'), H('Adet')];
+    H('Brüt alan (m²)'), H('Ölçü G x Y (mm)'), H('Genişlik (mm)'), H('Yükseklik (mm)'), H('Adet')];
   var eSay = function(ad, l){
     var r = [eBas];
     l.forEach(function(x){ r.push([x.saft, x.gorev, x.kat, x.zon, Math.round(x.debi), r2(x.b.v), r2(x.b.s), r3(x.b.A),
-      Math.round(x.b.o1), Math.round(x.b.o2y), x.adet]); });
-    r.push([B('TOPLAM'), '', '', '', '', '', '', '', '', '', l.reduce(function(a, x){ return a + x.adet; }, 0)]);
-    return { ad:ad, gen:[8,15,14,12,13,10,12,14,12,12,8], satir:r };
+      x.olcu, Math.round(x.b.o1), Math.round(x.b.o2y), x.adet]); });
+    r.push([B('TOPLAM'), '', '', '', '', '', '', '', '', '', '', l.reduce(function(a, x){ return a + x.adet; }, 0)]);
+    return { ad:ad, gen:[8,15,14,12,13,10,12,14,18,13,13,8], satir:r };
   };
   sayfalar.push(eSay('Damperler', ek.damper));
   sayfalar.push(eSay('Tel Fensler', ek.telfens));
 
   var pr = [[H('Şaft'), H('Görev'), H('Konum'), H('Debi (m³/h)'), H('Hız (m/s)'), H('Serbest alan'), H('Brüt alan (m²)'),
-    H('Ölçü 1 (mm)'), H('Ölçü 2 (mm)'), H('Adet')]];
+    H('Ölçü G x Y (mm)'), H('Genişlik (mm)'), H('Yükseklik (mm)'), H('Adet')]];
   ek.panjur.forEach(function(x){ pr.push([x.saft, x.gorev, x.konum, Math.round(x.debi), r2(x.b.v), r2(x.b.s), r3(x.b.A),
-    Math.round(x.b.o1), Math.round(x.b.o2y), x.adet]); });
-  pr.push([B('TOPLAM'), '', '', '', '', '', '', '', '', ek.panjur.length]);
-  sayfalar.push({ ad:'Panjurlar', gen:[8,15,20,13,10,12,14,12,12,8], satir:pr });
+    x.olcu, Math.round(x.b.o1), Math.round(x.b.o2y), x.adet]); });
+  pr.push([B('TOPLAM'), '', '', '', '', '', '', '', '', '', ek.panjur.length]);
+  sayfalar.push({ ad:'Panjurlar', gen:[8,15,20,13,10,12,14,16,13,13,8], satir:pr });
 
-  var jr = [[H('Kat'), H('Zon'), H('Alan (m²)'), H('Jet fan (adet)')]];
-  ek.jet.forEach(function(x){ jr.push([x.kat, x.zon, r1(x.alan), x.adet]); });
-  jr.push([B('TOPLAM'), '', '', T.jet]);
-  sayfalar.push({ ad:'Jet Fanlar', gen:[16,14,12,15], satir:jr });
+  var jr = [[H('Kat'), H('Zon'), H('Alan (m²)'), H('Model'), H('Yön'), H('İtki — yüksek devir (N)'), H('İtki — düşük devir (N)'),
+    H('Devir sayısı (d/d)'), H('Motor gücü — yüksek devir (kW)'), H('Motor gücü — düşük devir (kW)'), H('Adet'),
+    H('Toplam itki — yüksek devir (N)'), H('Toplam güç — yüksek devir (kW)')]];
+  ek.jet.forEach(function(x){
+    var j = x.j;
+    jr.push([x.kat, x.zon, r1(x.alan), j.model, j.yon, j.itki[0], j.itki[1], cift(j.devir), j.guc[0], j.guc[1],
+      x.adet, x.adet*j.itki[0], r2(x.adet*j.guc[0])]);
+  });
+  jr.push([B('TOPLAM'), '', '', '', '', '', '', '', '', '', T.jet, Math.round(son.toplam.jetItki), r2(son.toplam.jetGuc)]);
+  sayfalar.push({ ad:'Jet Fanlar', gen:[16,14,11,12,12,13,13,14,15,15,8,15,15], satir:jr });
 
-  var zr = [[H('Kat'), H('Zon'), H('Alan (m²)'), H('Yükseklik (m)'), H('Hacim (m³)'), H('Jet fan'),
+  /* çizim lejantıyla aynı sıra ve yazım; kullanılmayan tipler 0 adet */
+  var lr = [[H('Cihaz'), H('Yön'), H('İtki kuvveti (N)'), H('Devir sayısı (d/d)'), H('Motor gücü (kW)'), H('Adet'),
+    H('Toplam güç — yüksek devir (kW)')]];
+  ek.jetTip.forEach(function(x){
+    var j = x.j;
+    lr.push([j.model, j.yon, cift(j.itki), cift(j.devir), cift(j.guc), x.adet, r2(x.adet*j.guc[0])]);
+  });
+  lr.push([B('TOPLAM'), '', '', '', '', T.jet, r2(son.toplam.jetGuc)]);
+  sayfalar.push({ ad:'Jet Fan Lejantı', gen:[13,12,16,18,16,8,18], satir:lr });
+
+  var zr = [[H('Kat'), H('Zon'), H('Alan (m²)'), H('Yükseklik (m)'), H('Hacim (m³)'), H('Jet fan (adet)'),
     H('Duman şaftları'), H('Taze hava şaftları'), H('Açıklık debisi (m³/h)'), H('Normal havalandırma (m³/h)'),
     H('Normal taze — fandan (m³/h)'), H('Yangın duman (m³/h)'), H('Yangın taze — fandan (m³/h)')]];
   var py = function(pl){ return pl.map(function(x){ return x[0] + (pl.length > 1 ? ' %' + Math.round(x[1]*100) : ''); }).join(' · '); };
@@ -26004,7 +26221,7 @@ function excelSayfalari(son){
     zr.push([z.kat || '—', z.zon || '—', r1(z.alan), r2(z.yuk), r1(z.hac), z.jf, py(z.dp) || '—', py(z.tp) || '—',
       Math.round(z.aq), Math.round(z.gun), Math.round(z.nf), Math.round(z.dum), Math.round(z.yf)]);
   });
-  sayfalar.push({ ad:'Zonlar', gen:[14,12,11,12,12,9,20,20,16,18,18,16,18], satir:zr });
+  sayfalar.push({ ad:'Zonlar', gen:[14,12,11,12,12,10,20,20,16,18,18,16,18], satir:zr });
   return sayfalar;
 }
 function dosyaAdi(){
@@ -26031,7 +26248,8 @@ GENEL.xzOtoparkExcel = function(btn){
 };
 /* test tezgâhı için */
 GENEL.xzOtoparkTest = { excelSayfalari: function(){ return excelSayfalari(SON); },
-  kitap: function(){ return XLSX_YAZ.kitap(excelSayfalari(SON)); }, son: function(){ return SON; } };
+  kitap: function(){ return XLSX_YAZ.kitap(excelSayfalari(SON)); }, son: function(){ return SON; },
+  katalog: function(){ return JF; } };
 
 /* -------------------------------------------------------- MOD kaydını değiştir */
 var k = -1;
