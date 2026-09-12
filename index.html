@@ -25428,8 +25428,9 @@ function kur(){
 
   '<div class="card"><h3>Şema</h3><div id="xz-otopark" class="czbox"></div>'+
    '<div class="note">Zonlar alanlarıyla orantılı çizilir. Kırmızı borular duman tahliye, yeşil borular taze '+
-   'hava şaftıdır; her şaftın başında zeminde panjur, şaftın açıldığı katlarda damper (tek kata açılıyorsa '+
-   'tel fens) işaretlidir. Aynı kattaki zonlar şafta ortak hatla bağlanır. Şema girdilerle canlı güncellenir, ölçekli değildir.</div></div>'+
+   'hava şaftıdır; her şaftın başında zeminde panjur vardır. Damper (şaft tek kata açılıyorsa tel fens) zonun '+
+   'şafta bağlandığı yerde çizilir; aynı kattaki zonlar açıklığı ortak kullanıyorsa hatları birleşir ve eleman '+
+   'birleştikleri yerde bir kez çizilir. Şema girdilerle canlı güncellenir, ölçekli değildir.</div></div>'+
 
   '<div class="card"><h3>Yönetmelik Notları</h3><div class="note">'+
    '<b>BYKHY (2007):</b> normal işletmede CO seviyesine göre havalandırma, yangın senaryosunda duman '+
@@ -25966,11 +25967,20 @@ function ciz(zon, dKul, tKul){
   katAd.forEach(function(k){
     var zs = katMap[k], top = zs.reduce(function(a, z){ return a + z.alan; }, 0) || 1;
     var px = x0, yy = y + 3, hh = KY - bandH - 9;
-    var bant = yy + hh + BY, sira = 0, satirNo = {}, isaretli = {};
+    var bant = yy + hh + BY, sira = 0, satirNo = {}, acNok = {}, engel = [];
     var satir = function(ad){ if (satirNo[ad] === undefined) satirNo[ad] = sira++; return satirNo[ad]; };
     g += TX(katX, yy + hh/2 + 3, k, 'txs', 'end');
-    zs.forEach(function(z){
-      var w = Math.max(26, gen*z.alan/top - 3), cx = px + w/2;
+    /* zon genişliği alanla orantılı, en az 26 px. Küçük zonlar 26'ya büyütülünce toplam kat genişliğini
+       aşmasın diye fazlası büyük zonlardan orantılı düşülür — yoksa sağdaki kutular şaft borularına taşar.
+       (gen ≥ zon sayısı × 110 olduğundan her zaman sığar.) */
+    var gw = zs.map(function(z){ return Math.max(26, gen*z.alan/top - 3); });
+    var fazla = gw.reduce(function(a, w){ return a + w; }, 0) - (gen - 3*zs.length);
+    if (fazla > 0.01){
+      var esnek = gw.reduce(function(a, w){ return a + (w - 26); }, 0);
+      if (esnek > 0) gw = gw.map(function(w){ return w - fazla*(w - 26)/esnek; });
+    }
+    zs.forEach(function(z, zi){
+      var w = gw[zi], cx = px + w/2;
       var ic = Math.min(w*0.22, 20);
       var xT = px + ic, xD = px + w - ic;
       g += R(px, yy, w, hh, 'lnf', 2);
@@ -25983,42 +25993,75 @@ function ciz(zon, dKul, tKul){
         g += TXm(cx, yy + hh/2 - (ikinci ? 5 : 0), ad, 'txb');
         if (ikinci) g += TXm(cx, yy + hh/2 + 8, ikinci, 'txs');
       } else if (w > 14) g += TXm(cx, yy + hh/2, '·', 'txs');
-      /* bağlantılar: duman sağ alt uçtan, taze hava sol alt uçtan; şaftta damper / tel fens işareti */
+      /* bağlantılar: duman sağ alt uçtan, taze hava sol alt uçtan. Damper / tel fensin yeri
+         kat döngüsünün sonunda çizilmek üzere kaydedilir (acNok): zonun hattının şafta döndüğü
+         nokta; aynı kattaki zonlar açıklığı ortak kullanıyorsa şafta en yakın zonunki. */
       z.dp.forEach(function(p){
         var j = dU.indexOf(p[0]); if (j < 0) return;
         var gg = gBul(p[0]);
         var acikVar = gg && gg.acik.some(function(o){ return o.zonlar.indexOf(z) >= 0; });
         var yb = bant + satir(p[0])*BS, sx = dX(j) + 5.5;
+        engel.push([xD - 1, yy + hh, xD + 1, yb]);
         if (!acikVar){
           g += L(xD, yy + hh, xD, yb, 'hid') + L(xD, yb, sx, yb, 'hid');
           return;
         }
         g += L(xD, yy + hh, xD, yb, 'bad') + L(xD, yb, sx, yb, 'bad');
         g += CI(xD, yy + hh, 2.4, 'badf');
-        if (!isaretli[p[0]]){      /* aynı kattaki zonlar ortak kullanır: tek açıklık, tek işaret */
-          isaretli[p[0]] = 1;
-          g += (gg && gg.acTur === 'telfens') ? telfensSym(sx, yb, 'badf') : damperSym(sx, yb, 'badf');
+        var etiket = p[1] < 0.999;
+        if (etiket){   /* yüzde, hattın zon tarafında: şaft tarafı açıklık elemanına kalır */
+          var et = '%' + nf(p[1]*100, 0);
+          g += TX(xD - 4, yb - 3.5, et, 'badtx', 'end');
+          engel.push([xD - 4 - et.length*6.3, yb - 12, xD - 4, yb - 2]);
         }
-        if (p[1] < 0.999) g += TX(xD + 7, yb - 3.5, '%' + nf(p[1]*100, 0), 'badtx', 'start');
+        var a = acNok['d' + p[0]];
+        if (!a || xD > a.x) acNok['d' + p[0]] = { yon:1, x:xD, y:yb, etiket:etiket, tur:gg.acTur, c:'badf' };
       });
       z.tp.forEach(function(p){
         var j = tU.indexOf(p[0]); if (j < 0) return;
         var gg = gBul(p[0]);
         var acikVar = gg && gg.acik.some(function(o){ return o.zonlar.indexOf(z) >= 0; });
         var yb = bant + satir(p[0])*BS, sx = tX(j) - 5.5;
+        engel.push([xT - 1, yy + hh, xT + 1, yb]);
         if (!acikVar){   /* atanmış ama fandan hava gerekmiyor: kesik çizgi, eleman yok */
           g += L(xT, yy + hh, xT, yb, 'hid') + L(xT, yb, sx, yb, 'hid');
           return;
         }
         g += L(xT, yy + hh, xT, yb, 'ok') + L(xT, yb, sx, yb, 'ok');
         g += CI(xT, yy + hh, 2.4, 'okf');
-        if (!isaretli[p[0]]){
-          isaretli[p[0]] = 1;
-          g += (gg && gg.acTur === 'telfens') ? telfensSym(sx, yb, 'okf') : damperSym(sx, yb, 'okf');
+        var etiket = p[1] < 0.999;
+        if (etiket){
+          var et = '%' + nf(p[1]*100, 0);
+          g += yesilYazi(xT + 4, yb - 3.5, et, 'start');
+          engel.push([xT + 4, yb - 12, xT + 4 + et.length*5.8, yb - 2]);
         }
-        if (p[1] < 0.999) g += yesilYazi(xT - 7, yb - 3.5, '%' + nf(p[1]*100, 0));
+        var a = acNok['t' + p[0]];
+        if (!a || xT < a.x) acNok['t' + p[0]] = { yon:-1, x:xT, y:yb, etiket:etiket, tur:gg.acTur, c:'okf' };
       });
       px += w + 3;
+    });
+    /* açıklık elemanları: zonun hattı şafta döndükten 12 px sonra, kendi satırının hattı üstünde.
+       Ortak açıklıkta bütün zonların hattı bu noktadan geçer, eleman bir kez çizilir. Başka zonun
+       dikey hattına, yüzde etiketine ya da önceki bir elemana değiyorsa şaft yönünde 6'şar px
+       kaydırılır; şaft borusuna girmez — boş yer kalmazsa sınıra kadarki en az örtüşen konum seçilir. */
+    Object.keys(acNok).forEach(function(key){
+      var a = acNok[key], yarim = a.tur === 'telfens' ? 3.5 : 5;
+      /* boru sınırı; eleman hiçbir durumda kendi bağlantı noktasının gerisine düşmez */
+      var sinir = a.yon > 0 ? Math.max(x1 + 11, a.x + 12) : Math.min(x0 - 21, a.x - 12);
+      var yer = null, enAz = Infinity;
+      for (var dene = 0; dene < 16; dene++){
+        var cxs = a.x + a.yon*(12 + dene*6);
+        if (a.yon > 0 ? cxs > sinir : cxs < sinir) cxs = sinir;
+        var r = [cxs - yarim - 1.5, a.y - 5, cxs + yarim + 1.5, a.y + 5];
+        var ortusme = engel.reduce(function(t, e){
+          var w = Math.min(r[2], e[2]) - Math.max(r[0], e[0]), h = Math.min(r[3], e[3]) - Math.max(r[1], e[1]);
+          return t + (w > 0 && h > 0 ? w*h : 0);
+        }, 0);
+        if (ortusme < enAz){ enAz = ortusme; yer = cxs; }
+        if (ortusme === 0 || cxs === sinir) break;
+      }
+      engel.push([yer - yarim, a.y - 3.5, yer + yarim, a.y + 3.5]);
+      g += a.tur === 'telfens' ? telfensSym(yer, a.y, a.c) : damperSym(yer, a.y, a.c);
     });
     y += KY;
     g += L(x0 - 10, y, x1 + 10, y, 'grid');
